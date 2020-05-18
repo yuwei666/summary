@@ -1,7 +1,9 @@
 #### 主要
 
 ```
-git commit;				提交
+git add . 				添加文件到暂存区
+
+git commit;				提交版本
 
 git commit –amend		撤销上一次提交,并将暂存区文件重新提交
 
