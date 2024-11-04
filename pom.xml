@@ -8,8 +8,16 @@
     <!-- 父工程需要打包成pom -->
     <packaging>pom</packaging>
 
+    <!--
+        父工程的作用
+        如果在父 POM 的 <dependencyManagement> 标签中声明了一个依赖，那么在所有的子模块中，
+            只需要声明这个依赖的 groupId 和 artifactId，不需要再写版本号，因为版本号会自动继承自父 POM。这种方式主要用于管理版本。
+        如果在父 POM 的 <dependencies> 标签中声明了一个依赖，那么这个依赖会自动被所有的子模块继承，
+            子模块无需再次声明。这种方式主要用于声明公共依赖。
+     -->
     <modules>
         <module>sa-token</module>
+        <module>rate</module>
     </modules>
 
     <properties>
@@ -24,8 +32,8 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -36,25 +44,26 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>utils</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <!-- 这个里面包含了spring-boot所有的版本号 -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-web</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot.version}</version>
-                <scope>test</scope>
+                <!-- 父pom中的dependencyManagement
+                    标签中需要导入另一个pom中的dependencyManagement的时候，
+                    必须同时使用<scope>import</scope> 和 <type>pom</type> -->
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>

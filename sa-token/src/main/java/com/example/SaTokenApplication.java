@@ -9,7 +9,6 @@ public class SaTokenApplication {
 
     /**
      * http://localhost:8081
-     * @param args
      */
     public static void main(String[] args) {
         SpringApplication.run(SaTokenApplication.class, args);
