@@ -1,0 +1,151 @@
+Spring
+##### Bean的生命周期
+1. 推断构造方法 存在@Autowired的构造方法会直接使用，如果没有，则使用无参的构造方法，若有参构造方法大于1个，则会报错，否则使用唯一的有参构造
+2. 实例化 使用构造方法得到一个对象，这个对象的属性不一定有值，比如使用的是无参的构造方法
+3. 依赖注入 也就是属性填充，对加了@Autowired或@Resource注解的属性，从Spring容器中找到对象，通过反射或set方法进行赋值
+4. 处理Aware回调 也就是Bean是否实现了Aware接口，在接口的实现方法中，Spring会把容器传递过来，进行处理
+5. 初始化前，处理@PostConstruct  也就是Bean中某个方法加了@PostConstruct注解
+6. 初始化，处理InitializingBean  也就是Bean中是否实现了InitializingBean#afterPropertiesSet()
+7. 初始化后，进行AOP 生成一个代理对象
+8. 销毁	在容器关闭时，会调用Destroy()
+
+##### Spring解决循环依赖
+三级缓存
+一级缓存：缓存最终的单例池对象 初始化完成的Bean对象
+二级缓存：缓存初始化的对象	对于对象间的普通引用，二级缓存会保存new出来的不完整对象，这样当单例池对象中找不到依赖的属性时，
+			就可以从二级缓存中获取到不完整对象，完成对象创建，在后续依赖注入过程中，将单例池对象的引用关系调整完成
+三级缓存：缓存对象的ObjectFactory	如果引用对象配置了AOP，那在单例池中最终会需要注入动态代理对象，而不是原对象。而生成动态代理对象是在对象初始化完成后才开始的。
+			于是Spring增加了三级缓存，保存所有对象的动态代理信息。在发现有循环依赖时，将这个对象的动态代理信息获取出来，提前进行AOP，生成动态代理。
+解决循环依赖还可以使用@Lazy
+
+自动装配
+也就是依赖注入，可以根据类型、名称、构造函数进行注入，默认会使用构造方法，如果不满足条件，会使用类型
+
+Spring的AOP是在哪里创建的
+一个是在Bean的初始化后进行AOP，另外一个是在循环注入时，会为循环依赖的Bean进行AOP
+AOP的实现依赖动态代理，一共有两种方式，cglib和JDK的动态代理	
+
+AOP实现了接口，一定使用了JDK的动态代理吗？
+实现了接口，这些接口不是生命周期的回调接口，且方法个数>0，才会使用JDK的动态代理
+
+Spring支持集中Bean的作用域
+singtle：默认，每种容器中只有一个bean的实例，单例模式由BeanFactory来维护，生命周期与IOC容器一致，但是第一次被注入才会被创建
+prototype：每次注入都会创建一个对象
+request：在每一个Http请求中创建一个单例对象，就是单个请求会复用这个对象
+session：确保每个session中有一个实例，session过期对象消失
+application：和servletContext的生命周期一样
+...
+
+Bean是线程安全的吗
+因为Spring的Bean默认是single单例，所以是不安全的，如果有多个线程对类成员变量进行操作，可以使用ThreadLocal修饰，或者使用prototype
+
+##### SpringMVC如何处理请求的
+1. 用户发送请求到前端控制器 DispatcherServlet
+2. DispatcherServlet收到请求调用HandleMapping处理器映射器 映射的是请求url和方法，映射内容是在容器启动时解析的
+3. 找到方法后执行方法，执行方法前又会有很多处理，比如说定义@Controller时，定义了@RequstHeader、@RequestParameter
+4. 执行方法后，也要看是否定义了@ResponseBody，如果定义了，会直接把返回内容写到请求体里，返回给浏览器；
+如果没有定义，就会根据返回内容，一般是字符串，找到对应视图，比如jsp，freemark，再根据引擎去渲染页面，得到html内容返回给浏览器。
+
+Spring事务是如何工作的
+Spring事务是基于AOP的，当某个方法加了@transactional注解，这个Bean对象就会生成AOP代理对象。代理对象执行时，会判断这个方法是否有@transactional注解，如果有就会开启事务。
+所谓开启事务就是事务管理器获取一个数据库连接，然后修改autoCommit属性为false，这样在这个连接上执行sql时就不会自动提交了。如果没有抛异常就正常提交，否则回滚。
+@transactional失效：因为是基于代理实现的，所以只有被代理对象调用时，注解才生效。如果方法是private，无法很好使用代理，也会导致失效。
+
+Spring事务失效
+Spring事务的原理是AOP，如果自调用会不生效，因为this对象不是代理对象；@transactional不是public；数据库不支持事务；没有被Spring管理；异常被吃掉了
+
+ApplicationContext和BeanFactory的区别
+ApplicationContext接口继承了BeanFactory接口，除了能获取Bean，创建Bean之外，还可以获取环境变量，国际化，事件发布等功能。
+
+BeanFactory和FactoryBean的区别
+都是用来创建对象的，BeanFactory是Spring控制的，使用的时候必须遵循完整的创建流程；FactoryBean只需要调用getObject方法即可获取对象
+
+Spring中的设计模式
+工厂模式：BeanFactory、FactoryBean
+装饰器模式：BeanWrapper
+代理模式：AOP
+观察者模式：事件监听
+
+
+Spring boot
+SpringBoot的常用注解
+@SpringBootApplication：加到启动类上，是@Configuration、@EnableConfiguration、@ComponentScan的集合
+
+##### SpringBoot的启动过程 
+运行main方法，先new一个SpringApplication应用，从spring.factories读取监听器listener、初始化器ApplicationContextInitializer
+运行run方法、读取环境变量、配置信息等,
+创建SpringApplication上下文：servletWebServerApplicationContext、读取配置类注册为-->BeanDefinition
+调用refresh方法加载ioc容器、解析@Import加载自动配置类、onRefresh创建内置的servlet容器
+在整个过程中，SpringBoot会调用多个监听器对外进行扩展
+
+##### SpringBoot的自动配置原理
+通过@SpringBootApplication引入@EnableAutoConfiguration，@EnableAutoConfiguration引入@Import，Spring容器启动时，加载ioc容器时会解析@Import
+@Import导入了DeferredImportSelector（推迟导入选择器，会使SpringBoot的自动配置类顺序在最后，方便扩展和覆盖），然后读取所有jar包下/META-INF中定义服务的文件，这个机制是一个SPI发现机制
+（/META-INF/spring.factories文件、/META-INF/servers/...），
+过滤出所有AutoConfigurationClass类型的类，最后通过@ConditionOnXXX排除无效的自动配置类
+
+开发过程中如何在SpringBoot基础上进行扩展
+百度或者看源码，查找xxxAutoConfiguration，重点关注@ConditionOnXXX是怎么做的
+
+SpringBoot的jar包可以直接启动
+因为jar包并不是普通的jar包，而是一个fat jar，在配置pom.xml时增加依赖maven-plugins，在打包jar时，会将项目依赖的jar包一起打包，并且指定了启动类。
+
+SpringBoot的默认日志实现框架是什么？如何切换成别的
+logback
+
+SpringBoot读取配置文件的原理？加载顺序？
+通过事件监听的方式读取，加载顺序按照配置的先后顺序形成互补，优先级告的会覆盖优先级低的
+
+如何自定义一个starter
+创建一个maven项目，在pom文件中引入自动配置的依赖；创建自动配置类，使用@Configuration和@Bean进行标注；创建spring.factories，把自动配置的类填写进去；如果需要外部化配置属性，
+可以使用注解进行标注；这样才其他项目中，直接引入starter组件就可以自动进行配置
+
+SpringBoot和Spring的区别
+约定优于配置，大大简化了项目搭建和后期维护，专注于核心业务的开发；SpringBoot内置了tomcat服务器，部署也更加方便；SpringBoot提供了很多starter组件，集成更加方便
+
+SpringBoot为什么使用Cglib代理方式
+不依赖接口；底层使用字节码技术，效率更好；粒度控制更好，
+
+
+##### 开发过程中用到的注解
+@Controller @RequestMapping，@Component这些特别常用的注解我就不说了，说几个我用过的特殊功能的注解吧
+@Bean  用来定义Bean，类似于XML中的<bean>标签，Spring在启动时，会对加了@Bean注解的方法进行解析，将方法的名字做为beanName，并通过执行方法得到bean对象
+@AutoWired 根据属性类型寻找bean对象注入，找到多个根据名字去注入，没找到会报错，这个注解时Spring层面提供的，可以在字段，构造器，setter方法上使用
+@Resource  根据名字寻找bean对象注入，没找到会根据类型去注入，找到多个会报错，这个注解可以指定名字，这个注解时JDK层面提供的
+@ResponseBody 加了这个注解，不再走试图解析器流程，而是直接将内容返回
+@Async 异步调用注解，使用这个注解要先加上@EnableAsync打开开关，然后在需要异步调用的方法上加上这个注解就可以了，
+			有了这个注解，就会生成一个动态代理对象，执行这个方法就会有一个单独的线程去执行。
+MyBatis
+
+xml映射文件被MyBatis解析时，都会写一个dao接口与之对应，Dao接口的工作原理是什么？接口参数不同时，方法能重载吗？
+在xml映射文件解析时，每一个标签都会被解析为一个MappedStatement对象，这个对象的key是nameSpace的名字.id；
+Dao接口在Mybatis运行时，会使用JDK代理技术生成一个代理对象，获取接口的方法名，寻找同名字的MappedStatement对象执行sql，并将结果返回。
+Dao中是可以重载的
+
+MyBatis的缓存机制
+一级缓存，sqlSession级别的缓存，同一个sqlSession执行相同的sql时，第一次将结果进行缓存，第二次开始直接从缓存中读取。
+二级缓存，是Mapper级别的缓存，不同的sqlSession执行相同nameSpace下的sql时，第一次将结果进行缓存，第二次开始直接从缓存中读取。
+当某一个作用域进行新增修改删除，缓存会被清空
+
+插件运行原理
+Mybatis使用JDK的动态代理，为需要拦截的接口生成代理对象以实现接口方法拦截功能，
+Mybatis只支持针对 ParameterHandler、ResultSetHandler、StatementHandler、Executor 这4种接口的插件
+每当执行这4种接口对象的方法时，就会进入拦截方法，具体就是InvocationHandler的invoke()方法，拦截那些你指定需要拦截的方法。
+如果编写自己的插件，也是实现Interceptor接口并复写 intercept()方法，添加注解指定拦截的接口方法即可。
+
+MyBatis分页
+使用Rowbounds对象实现内存级别的分页
+还可以使用Interceptor拦截器实现，拦截需要分页的select语句，拼接上分页关键字和分页参数实现分页查询，一些分页插件也都是使用拦截器实现的。
+
+#{}和${}的区别
+#{}是预处理，使用?来替换，使用preparedStatement来赋值，会添加单引号
+${}是字符串替换，使用Statement赋值，没有单引号，有注入的风险
+
+
+
+
+
+
+
+
+
