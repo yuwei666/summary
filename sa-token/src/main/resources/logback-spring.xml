@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 日志级别从低到高分为TRACE < DEBUG < INFO < WARN < ERROR < FATAL，如果设置为WARN，则低于WARN的信息都不会输出 -->
+<!-- scan:当此属性设置为true时，配置文档如果发生改变，将会被重新加载，默认值为true -->
+<!-- scanPeriod:设置监测配置文档是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。
+                 当scan为true时，此属性生效。默认的时间间隔为1分钟。 -->
+<!-- debug:当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。 -->
+<configuration scan="true" scanPeriod="10 seconds">
+    <!-- 加载 Spring 配置文件信息
+           scope="context": 表示从 Spring 上下文中读取属性值。
+           name: 在 Logback 配置中定义的属性名称。
+           source: 指定从 Spring 应用程序配置文件中读取的属性源。
+           defaultValue (可选): 如果 Spring 上下文中找不到指定的属性，则使用默认值。-->
+    <springProperty scope="context" name="applicationName" source="spring.application.name" defaultValue="localhost"/>
+
+    <property name="log.path" value="./logs"/>
+    <property name="log.simple.pattern" value="%d{HH:mm:ss.SSS} %-5level - %msg%n"/>
+    <property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <!-- 花里胡哨，不建议用 -->
+    <property name="log.console.pattern" value="%red(%d{HH:mm:ss.SSS}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}) - %msg%n"/>
+
+    <!-- 输出到控制台 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${log.simple.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 输出到文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${log.path}/file.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 向文件输出日志，并且支持日志文件的滚动（按时间或文件大小切分日志文件） -->
+    <appender name="FILE_ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/rolling.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/rolling.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory> <!-- 保留最近30天的日志文件 -->
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="STDOUT"/>
+        <!--  -->
+        <!--<appender-ref ref="FILE"/>
+        <appender-ref ref="FILE_ROLLING"/>-->
+    </root>
+
+    <!-- addtivity：是否向上级logger传递打印信息。默认是true。 -->
+   <!-- <logger name="com.example.web.exception.GlobalExceptionHandler" level="DEBUG" addtivity="true">
+        <appender-ref ref="STDOUT" />
+    </logger>-->
+
+
+
+</configuration>

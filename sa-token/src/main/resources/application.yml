@@ -1,0 +1,93 @@
+server:
+  # 端口号
+  port: 8081
+
+############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
+sa-token:
+  # token 名称（同时也是 cookie 名称）
+  token-name: sa-token
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: true
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: true
+  # Token前缀 与 Token值 之间必须有一个空格。
+  #一旦配置了 Token前缀，则前端提交 Token 时，必须带有前缀，否则会导致框架无法读取 Token。
+  #由于Cookie中无法存储空格字符，所以配置 Token 前缀后，Cookie 模式将会失效，此时只能将 Token 提交到header里进行传输。
+  # token-prefix: Bearer
+  jwt-secret-key: xxxxx
+
+    # 配置 Sa-Token 单独使用的 Redis 连接
+  alone-redis:
+    # Redis数据库索引（默认为0）
+    database: 2
+    # Redis服务器地址
+    host: 127.0.0.1
+    # Redis服务器连接端口
+    port: 6379
+    # Redis服务器连接密码（默认为空）
+    password:
+    # 连接超时时间
+    timeout: 10s
+
+spring:
+  data:
+    redis:
+      # 地址
+      host: 127.0.0.1
+      # 端口
+      port: 6379
+      # 数据库索引
+      database: 1
+      # 密码 没有密码不能空着，需要注释掉
+      # password:
+      # 连接超时时间
+      connect-timeout: 10s
+      # 是否开启ssl
+      ssl:
+        enabled: false
+redisson:
+  # redis key前缀
+  keyPrefix:
+  # 线程池数量
+  threads: 4
+  # netty连接池数量
+  nettyThreads: 8
+  # 单节点配置
+  singleServerConfig:
+    clientName: aaa
+    # 连接池最小空闲数
+    connectionMinimumIdleSize: 8
+    # 连接池大小
+    connectionPoolSize: 32
+    # 空闲超时，单位毫秒
+    idleConnectionTimeout: 10000
+    # 命令等待超时，单位毫秒
+    timeout: 3000
+    # 发布和订阅连接池大小
+    subscriptConnectionPoolSize: 50
+
+security:
+  excludes:
+    # 静态资源
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    # 公共路径
+    - /favicon.ico
+    - /error
+    # swagger 文档配置
+    # actuator 监控配置
+
+captcha:
+  numberLength: 1
+  charLength: 4
+
