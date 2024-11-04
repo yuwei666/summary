@@ -5,19 +5,14 @@
     <groupId>com.example</groupId>
     <artifactId>summary</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <!-- 父工程需要打包成pom -->
+    <!-- 父工程作用：用于管理版本、声明公共依赖。
+            如果在父 POM 的 <dependencyManagement> 标签中声明了一个依赖，那么在所有的子模块中，
+                只需要声明这个依赖的 groupId 和 artifactId，不需要再写版本号，因为版本号会自动继承自父 POM。
+            如果在父 POM 的 <dependencies> 标签中声明了一个依赖，那么这个依赖会自动被所有的子模块继承，子模块无需再次声明。
+            父工程需要打包成pom -->
     <packaging>pom</packaging>
-
-    <!--
-        父工程的作用
-        如果在父 POM 的 <dependencyManagement> 标签中声明了一个依赖，那么在所有的子模块中，
-            只需要声明这个依赖的 groupId 和 artifactId，不需要再写版本号，因为版本号会自动继承自父 POM。这种方式主要用于管理版本。
-        如果在父 POM 的 <dependencies> 标签中声明了一个依赖，那么这个依赖会自动被所有的子模块继承，
-            子模块无需再次声明。这种方式主要用于声明公共依赖。
-     -->
     <modules>
-        <module>sa-token</module>
-        <module>rate</module>
+        <module>utils</module>
     </modules>
 
     <properties>
@@ -35,14 +30,15 @@
             <version>${spring-boot.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.example</groupId>
@@ -64,11 +60,6 @@
                     必须同时使用<scope>import</scope> 和 <type>pom</type> -->
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
             </dependency>
             <dependency>
                 <groupId>cn.hutool</groupId>
