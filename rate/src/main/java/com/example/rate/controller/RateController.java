@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/rate")
 public class RateController {
 
     // 测试，浏览器访问： http://localhost:8081/rate/test2

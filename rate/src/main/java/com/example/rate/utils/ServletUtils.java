@@ -15,8 +15,7 @@ public class ServletUtils extends ServletUtil {
 
 
     public static String getClientIP() {
-        return null;
-       // return getClientIP(getRequest());
+        return getClientIP(getRequest());
     }
 
     public static HttpServletRequest getRequest() {
