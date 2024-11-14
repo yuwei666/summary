@@ -19,7 +19,9 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>2.7.6</spring-boot.version>
+        <spring-boot.version>2.4.6</spring-boot.version>
+        <springcloud.version>2020.0.3</springcloud.version>
+        <alibaba-cloud.version>2021.1</alibaba-cloud.version>
         <lombok.version>1.18.24</lombok.version>
         <hutool-all.version>5.8.32</hutool-all.version>
     </properties>
@@ -50,8 +52,8 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- 这个里面包含了spring-boot所有的版本号 -->
             <dependency>
-                <!-- 这个里面包含了spring-boot所有的版本号 -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
@@ -61,13 +63,27 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- 这个里面包含了cloud所有的版本号 -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${springcloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${alibaba-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool-all.version}</version>
             </dependency>
         </dependencies>
-
     </dependencyManagement>
 
     <build>

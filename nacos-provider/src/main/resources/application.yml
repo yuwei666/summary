@@ -1,0 +1,9 @@
+server:
+  #  ${port:8083} 没有port参数，使用8083端口，有port参数则使用port参数指定的端口，使用8084端口的支付服务。 -Dport=8084
+  port: ${port:8083}
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848 #配置Nacos地址
