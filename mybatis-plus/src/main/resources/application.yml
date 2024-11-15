@@ -1,0 +1,57 @@
+server:
+  port: 8086
+
+spring:
+  datasource:
+    druid:
+      # stat-view-servlet是Druid数据源提供的监控servlet。 http://{host}:{port}/{contextPath}/druid 访问
+      stat-view-servlet:
+        enabled: true
+        loginUsername: admin
+        loginPassword: 123456
+    dynamic:
+      druid:
+        initial-size: 5
+        min-idle: 5
+        maxActive: 20
+        maxWait: 60000
+        timeBetweenEvictionRunsMillis: 60000
+        minEvictableIdleTimeMillis: 300000
+        validationQuery: SELECT 'X'
+        testWhileIdle: true
+        testOnBorrow: false
+        testOnReturn: false
+        poolPreparedStatements: true
+        maxPoolPreparedStatementPerConnectionSize: 20
+        filters: stat,wall,slf4j
+        # connectionProperties: druid.stat.mergeSql\=true;druid.stat.slowSqlMillis\=5000
+      datasource:
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: root
+          # ENC()括号内就为加密的密码;
+          password: ENC(KXQIc67eGKEh9Bq0RACWv23iSxiDschUpecx9Dav2VhhLKOY0HZqkz3cgjvMX1K3fK3kmNDDxGQK4rFvp/1e/A==)
+          #注意：public-key为刚才生成私钥：但直接放入配置文件不安全，建议放入到启动项中 java -jar xxxxx.jar --publicKey=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJ8UgkMJfHs+XvazrJu9WrBGPENXBZwWqIE8idHqGf74K7XmaErdvh2rkj4jaJgpSXKkq59FC6XvQaor1tXYjP0CAwEAAQ==
+          # 在idea中配置 program arguments 然后在下面使用 ${publicKey} (这个没成功)
+          # 如果不配置public-key，且使用了ENC(CryptoUtils.encrypt("root"))，则会调用CryptoUtils.decrypt("root")方法，使用默认的密钥（不推荐此方式）;
+          public-key: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJ8UgkMJfHs+XvazrJu9WrBGPENXBZwWqIE8idHqGf74K7XmaErdvh2rkj4jaJgpSXKkq59FC6XvQaor1tXYjP0CAwEAAQ==
+        # 从库数据源，也可以写其他名称 调用时使用 @DS("名称")
+#        slave:
+#          driver-class-name: org.postgresql.Driver
+#          url: jdbc:postgresql://xxxxxxxx:5432/test2?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+#          username: root
+#          password: ENC(b5YQRCK++Ek9nNawxXfwvVxbufXJORqMHM5Pv9W0VMSuN+UCZec7bakQV4ZOo025WM7Cf/iV4E5RgVaPF5SSVQ==)
+#          public-key: ${publicKey}
+
+
+mybatis-plus:
+  mapperPackage: com.example.mybatisplus.**.mapper
+  mapper-locations: classpath*:mapper/*.xml # 目录下所有以 .xml 结尾的文件
+
+  # 设置Mybatis的日志实现类为控制台输出
+  log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+  # 涉及到开发和生产数据库不一致时，需要更改表名的约束，可以在Mapper.xml中使用${db_schema}. 代替写死
+  configuration-properties:
+    db_schema: test
