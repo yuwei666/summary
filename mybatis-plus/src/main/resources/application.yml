@@ -10,6 +10,8 @@ spring:
         loginUsername: admin
         loginPassword: 123456
     dynamic:
+      # 可以在这里统一设置私钥
+      # public-key: MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJ8UgkMJfHs+XvazrJu9WrBGPENXBZwWqIE8idHqGf74K7XmaErdvh2rkj4jaJgpSXKkq59FC6XvQaor1tXYjP0CAwEAAQ==
       druid:
         initial-size: 5
         min-idle: 5
@@ -47,11 +49,14 @@ spring:
 
 mybatis-plus:
   mapperPackage: com.example.mybatisplus.**.mapper
-  mapper-locations: classpath*:mapper/*.xml # 目录下所有以 .xml 结尾的文件
+  # 目录下所有以 .xml 结尾的文件
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    # 设置Mybatis的日志实现类为控制台输出
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 不输出日志
+    # log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
-  # 设置Mybatis的日志实现类为控制台输出
-  log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
-  # 涉及到开发和生产数据库不一致时，需要更改表名的约束，可以在Mapper.xml中使用${db_schema}. 代替写死
+  # 涉及到开发和生产数据库约束不一致时，需要动态书写表名的约束，可以在Mapper.xml中使用${db_schema}. 代替写死
   configuration-properties:
     db_schema: test
