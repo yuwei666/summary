@@ -31,4 +31,6 @@ public interface UserService extends IService<User> {
      * @return
      */
     PageDTO<UserVO> userPageQuery(UserQuery query);
+
+   void optimisticLock();
 }

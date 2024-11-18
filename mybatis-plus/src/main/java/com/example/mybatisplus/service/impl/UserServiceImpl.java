@@ -86,6 +86,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<UserVO> list = BeanUtil.copyToList(users, UserVO.class);
         return new PageDTO<>(page.getTotal(), page.getPages(), list);
     }
+
+    @Override
+    public void optimisticLock() {
+
+        User user = userMapper.selectById(1);
+        user.setUserName("新大哥");
+
+        int i = userMapper.updateById(user);
+        if(i==0) {
+            throw new RuntimeException("更新失败，请重试");
+        }
+
+    }
 }
 
 

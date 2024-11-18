@@ -2,10 +2,7 @@ package com.example.mybatisplus.domain;
 
 import java.io.Serializable;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 /**
@@ -20,9 +17,6 @@ public class User implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 
-    /**
-     *
-     */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
@@ -31,4 +25,9 @@ public class User implements Serializable {
     @TableField(value = "user_name")
     private String userName;
 
+    /**
+     * 乐观锁字段
+     */
+    @Version
+    private Integer version;
 }

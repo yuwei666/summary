@@ -12,6 +12,11 @@
     <sql id="Base_Column_List">
         id,user_name
     </sql>
+    <update id="updateUserNameById">
+        update ${db_schema}.user
+        set user_name = #{userName}
+        where id = #{id}
+    </update>
 
     <select id="selectById2" resultType="com.example.mybatisplus.domain.User">
         select  * from ${db_schema}.user where id = #{id}

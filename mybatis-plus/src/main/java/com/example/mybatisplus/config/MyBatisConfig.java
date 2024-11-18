@@ -22,7 +22,7 @@ public class MyBatisConfig {
         // 初始化 MybatisPlusInterceptor 核心插件
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 数据权限拦截器
-        interceptor.addInnerInterceptor(plusDataPermissionInterceptor());
+        //interceptor.addInnerInterceptor(plusDataPermissionInterceptor());
         // 添加自动分页插件
         interceptor.addInnerInterceptor(paginationInnerInterceptor());
         // 乐观锁插件
@@ -52,6 +52,12 @@ public class MyBatisConfig {
 
     /**
      * 乐观锁插件
+     *      乐观锁适用于读操作多的场景，这样可以提高程序的吞吐量。
+     * 执行过程
+     *      当要更新一条记录的时候，希望这条记录没有被别人更新
+     *      取出记录时，获取当前 version
+     *      执行更新时， set version = newVersion where version = oldVersion
+     *      如果 version 不对，就更新失败。
      */
     public OptimisticLockerInnerInterceptor optimisticLockerInnerInterceptor() {
         return new OptimisticLockerInnerInterceptor();
