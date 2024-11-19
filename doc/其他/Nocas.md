@@ -90,3 +90,11 @@ db.user.0=root
 db.password.0=root
 ```
 
+单机启动
+
+```
+bin/startup.sh -m standalone # linux
+bin/startup.cmd -m standalone # windows
+```
+
+或者修改配置文件startup.cmd  set MODE="standalone" 

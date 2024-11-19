@@ -1,10 +1,18 @@
 spring:
+  # 在Nacos上查找 payment-service-dev.yaml配置文件
   application:
     name: payment-service
   profiles:
     active: dev
   cloud:
     nacos:
+      # 读取配置文件的位置，namespace:命名空间ID  group：配置文件所在分组名称
+      # 如果不配置namespace默认为public，不配置group默认为DEFAULT_GROUP
       config:
         server-addr: localhost:8848
         file-extension: yaml
+        namespace: 5f519613-5347-4d9e-845c-89ca31271b99
+        group: MY_GROUP
+        extension-configs[0]:
+          data-id: common.yaml
+          refresh: true
