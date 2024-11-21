@@ -1,5 +1,7 @@
 ## Nacos
 
+[link](https://blog.csdn.net/crazymakercircle/article/details/143141533)
+
 >  Nacos /nɑ:kəʊs/ 是 Dynamic Naming and Configuration Service的首字母简称 ， 一个更易于构建云原生应用的动态服务发现、[配置管理](https://so.csdn.net/so/search?q=配置管理&spm=1001.2101.3001.7020)和服务管理平台。 
 
 优点：

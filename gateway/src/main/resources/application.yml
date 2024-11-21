@@ -1,0 +1,51 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: gateway
+  # web应用类型设置为REACTIVE，解决和Spring MVC 冲突
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      # route就是路由的意思,下面就是配置路由信息
+      # 一个网关项目大多会配置很多路由
+      # 所以这个网关配置是一个List集合类型
+      routes:
+        # List类型元素赋值时,每个元素都要以"-"开头,在这个"-"之后, 编写的所有内容,都是同一个对象的属性值
+        # id设置当前路由的名称,也是唯一标识,和其它配置没有对应关系,注意不能和之后的id名称重复即可
+        - id: gateway-payment
+          # uri属性配置的是路由目标服务器的名称,"payment-service"指注册到Nacos名称为"payment-service"的模块
+          # lb就是负载均衡LoadBalance的缩写,标识路由支持负载均衡
+          # http://localhost:9000/payment/1
+          uri: lb://payment-service
+          # predicate是断言的意思,断言指某些条件满足时,执行某些操作
+          # predicates配置也是一个List类型的属性,所以它赋值也要以"-"开头
+          predicates:
+            # 下面是断言的内容,Path表示判断路径,"/payment/**"表示判断路径是否以"/payment/"开头
+            # 当断言条件满足时,就会按上面uri的配置,路由到该服务器模块
+            # ↓   P是大写的!!!!!
+            - Path=/payment/**
+          # 内置过滤器允许在路由请求到目标资源的同时,对这个请求进行一些加工或处理，只能指定路由
+          filters:
+            # 增加参数
+            - AddRequestParameter=age,18
+
+
+        - id: gateway-consumer
+          # http://localhost:9000/order/feign/2
+          uri: lb://nacos-consumer
+          predicates:
+            - Path=/order/**
+
+      discovery:
+        locator:
+          # 开启动态路由功能,默认值是关闭的
+          # 动态路由规则:在网关端口号后,先编写要路由目标服务器注册到Naocs的名称
+          # 在编写访问这个服务器的具体路径
+          # 例如要访问 http://localhost:9000/order/feign/2  -> http://localhost:9000/nacos-consumer/order/feign/2
+          enabled: true

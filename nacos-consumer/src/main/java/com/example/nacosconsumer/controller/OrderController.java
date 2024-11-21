@@ -19,6 +19,9 @@ public class OrderController {
     @Resource
     private RestTemplate restTemplate;
 
+    /**
+     * http://localhost:8085/order/lb/2
+     */
     @GetMapping("/lb/{id}")
     public ResponseEntity<String> consumer_ribbon(@PathVariable("id") Integer id){
         String result = restTemplate.getForObject(SERVICE_URL + "/payment/" + id, String.class);
@@ -29,6 +32,9 @@ public class OrderController {
     @Resource
     private PaymentService paymentService;
 
+    /**
+     * http://localhost:8085/feign/2
+     */
     @GetMapping(value = "/feign/{id}")
     public ResponseEntity<String> consumer_feign(@PathVariable("id") Long id) {
         return paymentService.payment(id);

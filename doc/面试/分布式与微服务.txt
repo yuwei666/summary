@@ -110,7 +110,7 @@ netty
 Spring cloud alibaba
 Nacos：注册中心、配置中心 	集群模式下负载均衡由nigix实现，cluster模式下持久化可以配置Mysql实现，单机不需要，有自带的数据库
 		注册中心：服务启动时向Nacos注册服务
-		配置中心：必须使用bootstrap.properties（.yml）配置Nacos Server地址。每10ms判断配置的md5是否发生变化，有变化重新拉取。
+		配置中心：必须使用bootstrap.properties（.yaml）配置Nacos Server地址。每10ms判断配置的md5是否发生变化，有变化重新拉取。
 			@Value{”${xxx.xxx}“}需要配合@RefreshScope使用
 Ribbon：负载均衡 利用@LoadBalanced 给restTemplate添加拦截器，先替换url中的服务id，从注册中心Nocas或Euruka获取所有服务列表后，根据负载均衡算法选择一个服务，最后发送请求
 Feign：RPC调用  支持Spring mvc注解，整合了Nocos和Ribbon 
