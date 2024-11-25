@@ -24,6 +24,8 @@ public class PaymentController {
 
     @GetMapping("/{id}")
     public ResponseEntity<String> payment(@PathVariable("id") Long id) {
+        // 验证链路追踪时，让其抛出异常
+        // int i = 1/0;
         return ResponseEntity.ok("订单号 = " + id + "，支付成功，server.port" + serverPort);
     }
 

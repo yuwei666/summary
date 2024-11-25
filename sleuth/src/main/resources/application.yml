@@ -1,0 +1,14 @@
+server:
+  port: 8989
+
+spring:
+  application:
+    name: sleuth
+
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          servlet:
+            DispatcherServlet: DEBUG

@@ -31,6 +31,15 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-bootstrap</artifactId>
 		</dependency>
+
+		<!-- 引入此依赖，是为了使用链路sleuth链路追踪和zipkin日志展示 -->
+		<!-- zipkin包含了sleuth依赖 -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-zipkin</artifactId>
+			<version>2.2.8.RELEASE</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
