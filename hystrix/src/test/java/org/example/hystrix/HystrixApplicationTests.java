@@ -1,10 +1,10 @@
-package com.example.utils;
+package org.example.hystrix;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class UtilsApplicationTests {
+class HystrixApplicationTests {
 
     @Test
     void contextLoads() {

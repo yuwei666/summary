@@ -33,3 +33,6 @@ Spring Cloud Sleuth对于分布式链路的跟踪仅仅是生成一些数据，�
 2024-11-25 09:21:02.531  INFO [sleuth,1aef808b91840043,1aef808b91840043] 5076 --- [nio-8989-exec-2] o.e.sleuth.controller.ExampleController  : Hello world!
 ```
 
+
+
+[Sleuth](https://developer.aliyun.com/article/1203201#slide-0)

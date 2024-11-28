@@ -7,7 +7,7 @@ import com.example.rate.enums.LimitType;
 import com.example.rate.exception.ServiceException;
 import com.example.rate.utils.ServletUtils;
 import com.example.utils.MessageUtils;
-import com.example.utils.redis.RedisUtils;
+import com.example.rate.utils.RedisUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;

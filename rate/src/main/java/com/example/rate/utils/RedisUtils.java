@@ -1,4 +1,4 @@
-package com.example.utils.redis;
+package com.example.rate.utils;
 
 import cn.hutool.extra.spring.SpringUtil;
 import lombok.AccessLevel;

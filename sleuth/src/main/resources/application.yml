@@ -4,6 +4,14 @@ server:
 spring:
   application:
     name: sleuth
+  zipkin:
+    base-url: http://localhost:9411/ # 指定zipkin地址
+  sleuth:
+    sampler:
+      # 采样率值介于 0 到 1 之间，1 则表示全部采集
+      probability: 1
+      # 每秒采集的数量，默认是10，通过设置这个可以有效的避免消息过大
+      rate: 10
 
 logging:
   level:
@@ -12,3 +20,4 @@ logging:
         web:
           servlet:
             DispatcherServlet: DEBUG
+
