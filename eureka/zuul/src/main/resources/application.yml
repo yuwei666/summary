@@ -1,0 +1,44 @@
+server:
+  port: 8002
+
+spring:
+  application:
+    name: zuul-server
+
+eureka:
+  client: #将客户端注册到 eureka 服务列表内
+    service-url:
+      # 这个地址是 eureka-server注册中心在 application.yml 中暴露出来额注册地址 （单机版）
+      defaultZone: http://localhost:8761/eureka
+      # 将服务注册到 Eureka Server 集群
+      # defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+  instance:
+    instance-id: zuul-server #自定义服务名称信息
+    prefer-ip-address: true  #显示访问路径的 ip 地址
+
+zuul:
+  # 全局指定前缀
+  prefix: /api
+
+  #忽略的服务，防服务入侵。
+  # '*' 禁止所有服务通过服务名调用，只能通过自定义名称访问，服务名无法访问
+      # http://localhost:8002/api/provider/getPort √
+      # http://localhost:8002/api/eureka-provider/getPort ×
+  ignored-service: '*'
+  #忽略的接口，屏蔽接口
+  ignored-patterns: /**/div/**
+  # .ignored-headers属性丢弃一些Header
+  ignored-headers: Access-Control-Allow-Credentials, Access-Control-Allow-Origin
+  routes:
+    # 自定义名称，随便起名，但不要和serviceId一样 （写法一）
+    provider:
+      # 请求路径
+      path: /eureka-provider/**
+      # 在Eureka上的服务Id
+      serviceId: eureka-provider
+      # 还可以路由到物理地址，将serviceId替换成url即可
+      # url: http://localhost:8002
+      # 剥夺前缀功能，false时无需加 /api，测试了一下，在这加没鸟用啊，都得带着/api
+      stripPrefix: false
+    # 简化（写法二，设置 ignored-service: '*'后失效）
+    eureka-provider: /provider/**

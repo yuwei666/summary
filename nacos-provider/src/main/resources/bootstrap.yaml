@@ -13,6 +13,14 @@ spring:
         file-extension: yaml
         namespace: 5f519613-5347-4d9e-845c-89ca31271b99
         group: MY_GROUP
+        # 扩展配置，和下面的共享配置任选一个，其中 [n] 值越大，优先级越高
         extension-configs[0]:
           data-id: common.yaml
+          # group: ${spring.profiles.group}
           refresh: true
+
+        # 共享配置文件，和上面的扩展配置任选一个就行
+        # shared-configs:
+        #   data-id: common.yaml
+        #   # group: ${spring.profiles.group}
+        #   refresh: true

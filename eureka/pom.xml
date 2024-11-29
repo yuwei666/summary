@@ -11,6 +11,7 @@
     <modules>
         <module>eureka-server</module>
         <module>eureka-provider</module>
+        <module>zuul</module>
         <module>eureka-server-7001</module>
         <module>eureka-server-7002</module>
         <module>eureka-server-7003</module>
@@ -29,7 +30,23 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                    <groupId>org.springframework.boot</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!--Tomcat替换为undertow。在高并发方面，undertow性能更高 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-servlet</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
