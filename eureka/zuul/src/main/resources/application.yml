@@ -5,6 +5,9 @@ spring:
   application:
     name: zuul-server
 
+cors:
+  allowedOrigin: "*"
+
 eureka:
   client: #将客户端注册到 eureka 服务列表内
     service-url:

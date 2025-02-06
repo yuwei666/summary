@@ -24,6 +24,8 @@
         <option value="$PROJECT_DIR$/eureka/eureka-provider/pom.xml" />
         <option value="$PROJECT_DIR$/eureka/eureka-server-7001/pom.xml" />
         <option value="$PROJECT_DIR$/eureka/zuul/pom.xml" />
+        <option value="$PROJECT_DIR$/hello/pom.xml" />
+        <option value="$PROJECT_DIR$/docker-hello/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
@@ -33,7 +35,7 @@
       </set>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_20" project-jdk-name="17" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

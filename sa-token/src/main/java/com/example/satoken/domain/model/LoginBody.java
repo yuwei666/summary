@@ -25,7 +25,6 @@ public class LoginBody {
     /**
      * 验证码，短信发的？
      */
-
     private String code;
 
     /**

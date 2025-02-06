@@ -70,9 +70,6 @@ public class RepeatSubmitAspect {
             String message = repeatSubmit.message();
             throw new RuntimeException(message);
         }
-
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.set("a", "aa");
     }
 
     /**

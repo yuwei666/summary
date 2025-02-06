@@ -31,7 +31,7 @@ public class RedisUtils {
         // 设置速率，5秒中产生3个令牌
         rateLimiter.trySetRate(rateType, rate, rateInterval, RateIntervalUnit.SECONDS);
 
-        log.info("剩余令牌：{}", rateLimiter.availablePermits());
+        // log.info("剩余令牌：{}", rateLimiter.availablePermits());
 
         if(rateLimiter.tryAcquire()) {
             // 返回可用的许可数
