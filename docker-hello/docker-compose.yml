@@ -1,0 +1,57 @@
+# 版本：已过时，现无需指定
+# version: "3"
+
+name: myblog
+
+services:
+  # 自定义服务名称
+  mysql:
+    # 容器名称，不指定默认为服务名
+    container_name: mysql
+    # 镜像
+    image: mysql:8.0
+    # 端口
+    ports:
+      - "3306:3306"
+    # 环境变量
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=wordpress
+    # 卷
+    volumes:
+      # 如果使用到了卷映射，需要在顶级元素中声明
+      - mysql-data:/var/lib/mysql
+      # 路径挂载无需声明
+      - /app/myconf:/etc/mysql/conf.d
+    # 重启方式：总是
+    restart: always
+    # 指定网络，可以多个
+    networks:
+      - blog
+
+  myblog:
+    image: wordpress
+    ports:
+      - "8080:80"
+    environment:
+      # 主机直接使用 mysql容器名称
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=123456
+      - WORDPRESS_DB_NAME=wordpress
+    volumes:
+      - wordpress:/var/www/html
+    restart: always
+    networks:
+      - blog
+    depends_on:
+      - mysql
+
+# 声明网络
+networks:
+  blog:
+
+# 声明卷名，对应上面的卷映射
+volumes:
+  mysql-data:
+  wordpress:
