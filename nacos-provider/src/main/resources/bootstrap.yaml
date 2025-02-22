@@ -17,9 +17,11 @@ spring:
         extension-configs[0]:
           data-id: common.yaml
           # group: ${spring.profiles.group}
+          # 配置的动态更新
           refresh: true
 
         # 共享配置文件，和上面的扩展配置任选一个就行
+        # 有两个服务 service-a 和 service-b，它们都需要使用相同的数据库配置，可以把配置写在common.yaml中
         # shared-configs:
         #   data-id: common.yaml
         #   # group: ${spring.profiles.group}
