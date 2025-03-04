@@ -34,7 +34,9 @@ spring:
           filters:
             # 增加参数
             - AddRequestParameter=age,18
-
+            # 网关在处理请求时移除路径中的前缀
+            # 如果请求路径是 /api/v1/resource，并且配置了 StripPrefix=1，网关会移除 /api，然后将 /v1/resource 转发给后端服务。
+            - StripPrefix=1
 
         - id: gateway-consumer
           # http://localhost:9000/order/feign/2
@@ -49,3 +51,5 @@ spring:
           # 在编写访问这个服务器的具体路径
           # 例如要访问 http://localhost:9000/order/feign/2  -> http://localhost:9000/nacos-consumer/order/feign/2
           enabled: true
+          # 开启小写
+          lowerCaseServiceId: true

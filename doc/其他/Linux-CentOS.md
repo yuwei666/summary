@@ -93,6 +93,9 @@ ps -ef | grep nginx
 ```
 ps -ef
 ps -ef | grep "java"
+
+# 配合下面查看端口占用中的pid
+ps -ef pid
 ```
 
 展示结果中PID 是 进程id

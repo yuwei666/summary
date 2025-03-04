@@ -27,6 +27,7 @@
         <option value="$PROJECT_DIR$/hello/pom.xml" />
         <option value="$PROJECT_DIR$/docker-hello/pom.xml" />
         <option value="$PROJECT_DIR$/test/pom.xml" />
+        <option value="$PROJECT_DIR$/elasticsearch/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

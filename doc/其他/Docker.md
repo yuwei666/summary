@@ -8,10 +8,27 @@
 
 -- help为帮助 如docker --help 或 docker run --help
 
+##### 系统
+
 ```
 -- 查看版本
 docker version
 
+-- 提交
+docker commit
+
+-- 保存，将镜像保存为tar文件
+docker save
+
+-- 加载，将tar文件加载为镜像
+docker load
+```
+
+
+
+##### 容器
+
+```
 -- 查看所有运行中的容器
 docker ps 
 
@@ -19,7 +36,7 @@ docker ps
 docker ps -a
 docker ps -aq (只打印id)
 
--- 容器启动/停止/重启/查看状态       		应用名/123为id的前几位，能区分即可
+-- 容器启动/停止/重启/查看状态       应用名/123为id的前几位，能区分即可
 docker start/stop/restart/status nginx/123  
 
 -- 容器删除/强制删除
@@ -28,13 +45,14 @@ docker rm -f nginx/123
 -- 强制删除所有容器
 docker rm -f $(docker ps -aq)
 
-
 -- 运行
 -- -d表示后台启动 不加-d是在前台启动；
 -- --name 表示重命名
 -- 81是外部（linux）端口，80是内部（容器内）端口。 外部端口不能重复，容器端口可以。
 -- --restart always 开机启动
 docker run -d --name myNginx -p 81:80 --restart always nginx
+
+-- -e 设置环境变量
 
 -- run和start的区别
 run只在第一次运行时使用，将镜像放到容器中，以后再次启动这个容器时，只需要使用命令docker start即可
@@ -49,16 +67,34 @@ docker exec -it id123 bash
 	-- 进入之后可以使用linux命令，如ls，查看文件目录。
 	exit离开容器
 
+	# 进入容器后查看文件使用cat命令，其他指令不支持
+	cat conf.config
 
--- 提交
-docker commit
 
--- 保存，将镜像保存为tar文件
-docker save
 
--- 加载，将tar文件加载为镜像
-docker load
 
+```
+
+
+
+##### 镜像
+
+```
+# 显示所有镜像（包括中间层镜像）
+docker images -a
+
+# 按名称过滤镜像
+docker images <镜像名称>
+docker images ubuntu
+
+# 查看远程镜像 使用 docker search 命令搜索 Docker Hub 上的镜像：
+docker search ubuntu
+
+# 拉取镜像
+docker pull <镜像名称>
+
+# 删除镜像
+docker rmi <镜像名称或ID>
 
 ```
 
@@ -76,6 +112,28 @@ docker run -d --name myNginx -p 81:80 **-v /home/yuwei/tmp:/tmp** nginx
 
 如果挂载的是nginx.conf所在目录，此时外部如果为空，nginx启动需要读取配置文件，因为挂载的目录以外部为准，所以容器无法启动。应使用卷映射参数运行容器
 
+##### 查看容器的挂载情况
+
+```
+docker container inspect idxxx
+```
+
+以下是nginx的挂载情况，
+
+```
+	"HostConfig": {
+            "Binds": [
+            	# 将宿主机 /app/nginx/conf/conf.d 目录挂载到容器内的 /etc/nginx/conf.d 目录。
+                "/app/nginx/conf/conf.d:/etc/nginx/conf.d",
+                # 把宿主机上的 /app/nginx/html 目录挂载到容器内的 /app/ 目录
+                "/app/nginx/html:/app/",
+                # 将宿主机上的 /app/nginx/logs 目录挂载到容器内的 /var/log/nginx 目录
+                "/app/nginx/logs:/var/log/nginx"
+            ],
+```
+
+
+
 
 
 #### 卷映射
@@ -86,7 +144,7 @@ docker run -d --name myNginx -p 81:80 **-v /home/yuwei/tmp:/tmp** nginx
 docker run -d --name myNginx -p 81:80 -v ngconf:/etc/nginx nginx
 ```
 
-位置统一存储在Linux服务器：`Linux/var/lib/docker/volumes/`\<volumes-name>/_data/
+位置统一存储在Linux服务器：`Linux /var/lib/docker/volumes/`\<volumes-name>/_data/
 
 ```
 -- 查看所有卷
@@ -470,9 +528,20 @@ vim /etc/docker/daemon.json
 }
 
 # 保存后重启docker
-systemctl restart docker
+ sudo systemctl daemon-reload && sudo systemctl restart docker 
+```
+
+
+
+如果不生效，可以使用域名/img的方式，"docker.domys.cc"为镜像源域名
+
+```
+docker pull docker.domys.cc/elasticsearch:7.17.28
 ```
 
 
 
  
+
+
+

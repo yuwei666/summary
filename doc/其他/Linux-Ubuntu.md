@@ -22,8 +22,6 @@ su root
 
 # 给某个用户赋予sudo权限
 sudo usermod -aG sudo username
-
-
 ```
 
 
