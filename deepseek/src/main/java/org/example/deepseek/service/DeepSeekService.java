@@ -1,13 +1,13 @@
 package org.example.deepseek.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.deepseek.config.DeepSeekConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import java.util.Collections;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,54 +70,6 @@ public class DeepSeekService {
         return response.getBody();
     }
 
-    public String translate_copy(String text, String sourceLang, String targetLang) {
-
-        String url = deepSeekConfig.getApiUrl() + "/chat/completions"; // 示例 API 路径
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + deepSeekConfig.getApiKey());
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String requestBody = String.format("""
-                {
-                    messages: [
-                                {
-                                    "content": "你是一个多语言翻译助手，能够准确地将文本从一种语言翻译到另一种语言。请根据提供的源语言（source）、目标语言（target）和待翻译的文本（text），生成准确的翻译结果。
-                                     输入格式 - source: 当前文本的语言代码（例如：zh-CN 表示简体中文，en 表示英语，es 表示西班牙语等） - target: 目标语言代码（例如：en 表示英语，fr 表示法语，de 表示德语等） - text: 需要翻译的文本  输出格式：  - 返回一个JSON对象，包含以下字段： - result: 翻译后的文本。
-                                     示例输入：{"source": "zh-CN","target": "en","text": "你好，世界！"} 示例输出：{"result": "Hello, world!"}
-                                     请根据以下输入生成翻译结果： {"source": "%s","target": "%s","text": "%s"}",
-                                     "role": "system"
-                                }
-                            ],
-                    "model": "deepseek-chat",
-                    "frequency_penalty": 0,
-                    "max_tokens": 40,
-                    "presence_penalty": 0,
-                    "response_format": {
-                      "type": "text"
-                    },
-                    "stop": null,
-                    "stream": false,
-                    "stream_options": null,
-                    "temperature": 1.3,
-                    "top_p": 1,
-                    "tools": null,
-                    "tool_choice": "none",
-                    "logprobs": false,
-                    "top_logprobs": null
-                }
-        """, sourceLang, targetLang, text);
-
-        HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-
-        if (response.getStatusCode() == HttpStatus.OK) {
-            return response.getBody();
-        } else {
-            throw new RuntimeException("Translation failed: " + response.getStatusCode());
-        }
-    }
-
     public String translate(String text, String sourceLang, String targetLang) {
         String url = deepSeekConfig.getApiUrl() + "/chat/completions";
 
@@ -164,7 +116,23 @@ public class DeepSeekService {
 
             // 处理响应
             if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+                JsonNode rootNode = objectMapper.readTree(response.getBody());
+                String content = rootNode
+                        .path("choices")
+                        .path(0)
+                        .path("message")
+                        .path("content")
+                        .asText();
+                String resultText = content
+                        .replace("```json\n", "") // 移除多余的标记
+                        .replace("\n```", "")     // 移除多余的标记
+                        .trim();                   // 去除空白字符
+
+                // 解析 translationResult 为 JSON 对象
+                JsonNode resultNode = objectMapper.readTree(resultText);
+                resultText = resultNode.path("result").asText();
+
+                return resultText;
             } else {
                 throw new RuntimeException("Translation failed: " + response.getStatusCode());
             }

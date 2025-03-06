@@ -7,6 +7,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(HttpClientErrorException.class)
     public ResponseEntity<String> handleApiError(HttpClientErrorException e) {
         e.printStackTrace();

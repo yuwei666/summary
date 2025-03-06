@@ -1,11 +1,14 @@
 package org.example.deepseek.controller;
 
 import org.example.deepseek.config.DeepSeekConfig;
+import org.example.deepseek.entity.ApiResponse;
 import org.example.deepseek.entity.DeepSeekVO;
 import org.example.deepseek.service.DeepSeekService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/deepseek")
@@ -18,14 +21,15 @@ public class DeepSeekController {
     private DeepSeekService deepSeekService;
 
     @PostMapping("/chat")
-    public ResponseEntity<String> chat(@RequestBody DeepSeekVO deepSeekVO) {
+    public ApiResponse<String> chat(@RequestBody DeepSeekVO deepSeekVO) {
         String result = deepSeekService.callDeepSeekApi(deepSeekVO.getText());
-        return ResponseEntity.ok(result);
+        return ApiResponse.success(result);
     }
 
     @PostMapping("/translate")
-    public ResponseEntity<String> translate(@RequestBody DeepSeekVO deepSeekVO) {
+    public ApiResponse<String> translate(@RequestBody DeepSeekVO deepSeekVO) {
         String result = deepSeekService.translate(deepSeekVO.getText(), deepSeekVO.getSourceLang(), deepSeekVO.getTargetLang());
-        return ResponseEntity.ok(result);
+        return ApiResponse.success(result);
     }
+
 }
