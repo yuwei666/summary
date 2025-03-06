@@ -28,6 +28,7 @@
         <option value="$PROJECT_DIR$/docker-hello/pom.xml" />
         <option value="$PROJECT_DIR$/test/pom.xml" />
         <option value="$PROJECT_DIR$/elasticsearch/pom.xml" />
+        <option value="$PROJECT_DIR$/deepseek/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

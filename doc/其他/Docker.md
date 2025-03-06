@@ -70,9 +70,6 @@ docker exec -it id123 bash
 	# 进入容器后查看文件使用cat命令，其他指令不支持
 	cat conf.config
 
-
-
-
 ```
 
 
@@ -111,6 +108,12 @@ docker run -d --name myNginx -p 81:80 **-v /home/yuwei/tmp:/tmp** nginx
 ```
 
 如果挂载的是nginx.conf所在目录，此时外部如果为空，nginx启动需要读取配置文件，因为挂载的目录以外部为准，所以容器无法启动。应使用卷映射参数运行容器
+
+##### 运行中的容器进行挂载
+
+容器在运行状态下无法直接修改挂载的卷或目录，Docker 的设计决定了卷挂载是在容器启动时确定的，运行时无法动态修改。如果你需要修改挂载，通常需要停止容器并重新创建。 
+
+
 
 ##### 查看容器的挂载情况
 
@@ -537,6 +540,26 @@ vim /etc/docker/daemon.json
 
 ```
 docker pull docker.domys.cc/elasticsearch:7.17.28
+```
+
+
+
+附： docker 部署gitlab时，clone地址中ip部分不是实际的ip地址，需要进入容器中，执行下面命令
+
+```shell
+# 修改配置文件
+cd /opt/gitlab/embedded/service/gitlab-rails/config
+vi gitlab.yml
+-- 修改host内容 ->
+  gitlab:
+    ## Web server settings (note: host is the FQDN, do not include http://)
+    host: 47.94.9.234:800
+    port: 80
+    https: false
+---------------->
+
+# 重启服务
+gitlab-ctl restart
 ```
 
 

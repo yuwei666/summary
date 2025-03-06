@@ -1,0 +1,7 @@
+server:
+  port: 8099
+
+deepseek:
+  api:
+    key: sk-a84986969cf4493d9ee5e7356c6f6f18
+    url: https://api.deepseek.com/v1
