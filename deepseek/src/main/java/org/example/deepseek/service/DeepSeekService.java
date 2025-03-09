@@ -81,11 +81,25 @@ public class DeepSeekService {
         // 构建请求体
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "deepseek-chat");
+        // frequency_penalty: 频率惩罚（控制重复性
         requestBody.put("frequency_penalty", 0);
+        // max_tokens: 最大 token 数量。
         requestBody.put("max_tokens", 40);
+        // presence_penalty: 存在惩罚（控制新主题的引入）。
         requestBody.put("presence_penalty", 0);
+        // temperature: 温度参数（控制输出的随机性）。
         requestBody.put("temperature", 1.3);
+        // top_p: Top-p 采样参数（控制输出的多样性）。
         requestBody.put("top_p", 1);
+        // stream: 是否启用流式响应（true 或 false）。
+        requestBody.put("stream", false);
+        // stop: 停止词（用于提前结束生成）。
+        requestBody.put("stop", null);
+        // logprobs: 是否返回 token 的对数概率。
+        requestBody.put("logprobs", false);
+        // n: 生成多个回复。
+        requestBody.put("n", 1);
+
 
         Map<String, String> message = new HashMap<>();
         message.put("role", "system");
