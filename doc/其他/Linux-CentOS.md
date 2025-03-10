@@ -155,7 +155,7 @@ touch filename
 # 授权 -R：递归
 chmod -R 777 file
 
-# 移动
+# 移动/重命名
 mv file file
 
 # 拷贝

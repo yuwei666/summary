@@ -448,21 +448,6 @@ docker compose -f docker-compose.yml up -d
 
 
 
-
-### IDEA 使用docker
-
-idea2024以上版本使用docker，tcp连接后，提示
-
->  com.intellil.execution.process.ProcessNotCreatedException: Cannot run program “docker”:CreateProcess error=2 
-
-需要下载本地docker包，[下载](https://download.docker.com/win/static/stable/x86_64/)指定版本的zip，然后解压到任意目录，反选自动检测可执行路径，把两个路径手动指定
-
-```
-F:\java\docker\docker.exe (刚才解压的路径)
-```
-
-
-
 写完dockerfile后，部署到docker，报错
 
 > Deploying 'demo-container Dockerfile: hello/Dockerfile'…
