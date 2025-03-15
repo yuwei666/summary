@@ -104,7 +104,7 @@ docker rmi <镜像名称或ID>
 挂载是在容器运行时，增加 -v 参数，指定容器外部路径挂载到容器内，两边都可以修改
 
 ```
-docker run -d --name myNginx -p 81:80 **-v /home/yuwei/tmp:/tmp** nginx
+docker run -d --name myNginx -p 81:80 -v /home/yuwei/tmp:/tmp nginx
 ```
 
 如果挂载的是nginx.conf所在目录，此时外部如果为空，nginx启动需要读取配置文件，因为挂载的目录以外部为准，所以容器无法启动。应使用卷映射参数运行容器

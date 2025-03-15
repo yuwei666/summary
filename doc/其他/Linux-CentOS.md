@@ -97,8 +97,24 @@ ps -ef | grep "java"
 # 配合下面查看端口占用中的pid
 ps -ef pid
 ```
-
 展示结果中PID 是 进程id
+
+```bash
+# 查看占用内存的前10个进程，默认为KB
+ps aux --sort=-%mem | head
+
+# 单位展示为MB
+ps aux --sort=-%mem | head | awk 'NR==1; NR>1 {$6=int($6/1024)"MB"; print}'
+
+# 展示指定的列
+ps aux --sort=-%mem | head | awk 'NR==1 {printf "%-8s %-8s %-8s %-8s %s\n", $1, $2, $4, $6, $11}; NR>1 {$6=int($6/1024)"MB"; printf "%-8s %-8s %-8s %-8s %s\n", $1, $2, $4, $6, $11}'
+```
++ 第 5 列（VSZ）：虚拟内存大小（Virtual Memory Size），单位为 KB。
+
++ 第 6 列（RSS）：常驻内存大小（Resident Set Size），单位为 KB。
+
+
+
 
 ##### 查看端口占用
 

@@ -99,6 +99,23 @@ cd F:\java\nacos1.4.7\bin
 ./startup.cmd
 ```
 
+Docker 部署nacos
++ 拉取镜像
+
+```docker
+docker pull nacos/nacos-server:latest 
+```
+
++ 启动容器
+
+启动容器需要对3个端口进行映射，分别是8848,9848,9849。
+如果不开启三个端口，那么服务无法进行注册
+
+
+
+
+
+
 
 
 ## bootstrap.yml的作用
