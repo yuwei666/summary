@@ -17,9 +17,9 @@ VOLUME /tmp
 # 应用构建成功后的 jar 文件被复制到镜像内，名字也改成了 app.jar
 ADD target/*.jar app.jar
 
-# 设置 Alpine 系统时区
-#ENV TZ=Asia/Shanghai
-#RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+# 设置 Alpine 系统时区，解决容器内时间不准确问题
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 
 # 暴露指定端口
 EXPOSE 8085

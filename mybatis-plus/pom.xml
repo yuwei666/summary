@@ -51,6 +51,13 @@
             <version>1.9.6</version>
         </dependency>
 
+        <!-- 配置中数据加密的另一种实现 -->
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+
     </dependencies>
 
 </project>

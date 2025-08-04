@@ -1,10 +1,28 @@
+## 常用
+
+- 使用 `which` 查找可执行文件的路径。
+- 使用 `whereis` 查找二进制文件、源代码和手册页。
+- 使用 `locate` 快速查找文件（需要更新数据库）。
+- 使用 `find` 递归查找文件或目录。
+- 使用 `type` 查看命令的类型。
+
+
+
 #### 文件操作
 
 ##### 查看
 
 文件内容少时，使用cat指令
 
-cat -n text.txt 查看文件内容，-n 显示所有行号 	-b 非空输出行号  -s不输出多行空行
+```bash
+#  查看文件内容，-n 显示所有行号  -b 非空输出行号  -s不输出多行空行
+cat -n text.txt
+
+# 删除一行
+在普通模式下，移动光标，输入dd即可
+```
+
+
 
 文件内容较多时，使用less、more指令
 
@@ -39,31 +57,50 @@ find /home/app/. -name "spring-security-*"
 # 过滤掉所有没有权限的提示（不一定有效）
 find /home/app/. -name "spring-security-*" 2>/dev/null
 
-# 递归查找所有名称为xx的文件
+# 在当前目录下递归查找所有名称为xx的文件
 find . -name "xx" 
 
 # 递归查找所有名称xx的文件夹
 find . -type d -name "xx" 
+
+# 在根目录下查找文件夹html，并且排出错误选项（例如权限不足）
+find / -type d -name html 2>/dev/null
 ```
 
 ```
 head -f -n 20 xxx.log > temp.log  
 ```
 
-#### 查找文件
+##### 查找文件
+
+从文件夹中查询关键字，会从该目录下所有文本中查询此关键字，显示文件名称。
 
 
+
+```bash
+# 从当前目录下，递归查找文本 text  -r递归  -n 行号
+grep -rn "text" .
+
+# 忽略大小写
+grep -ril "/pacsiamge" .
+
+# 在置顶目录下查找
+grep -rn "/pacsiamge" /path/to/nginx/conf.d
+
+# 注意：grep默认只对普通文件起作用，不加
+grep aa
+```
 
 ##### 读取日志
 
 grep [选项] 关键字 日志文件
 
-```
-// 从sys.log日志文件中获取前后50行日志
+```bash
+# 从sys.log日志文件中获取前后50行日志
 grep -A 数量 "关键字" 文件名
-// 从sys.log日志文件中获取前50行日志
+# 从sys.log日志文件中获取前50行日志
 grep -B 数量 "关键字" 文件名   
-// 从sys.log日志文件中获取后50行日志
+# 从sys.log日志文件中获取后50行日志
 grep -C 数量 "关键字" sys.log 
 ```
 
@@ -72,7 +109,7 @@ grep -C 数量 "关键字" sys.log
 |`：这是一个管道符号，用于将一个命令的输出作为另一个命令的输入。在这里，它将`tail -2000f sys.log`的输出传递给`grep 
 
 ```
-// 从sys.log文件检索最新2000行日志，然后再从中按照关键字检索后50行日志
+# 从sys.log文件检索最新2000行日志，然后再从中按照关键字检索后50行日志
 tail -2000f sys.log | grep -C 50 '关键字'
 ```
 
@@ -87,6 +124,23 @@ ps -ef | grep nginx
 
 
 #### 系统
+
+##### 用户
+
+```bash
+# 新建用户 -m：自动创建用户的 home 目录，如 /home/yuwei
+sudo useradd -m yuwei
+# 添加密码
+sudo passwd yuwei
+# 授权
+usermod -aG wheel yuwei
+# 切换用户
+su - yuwei
+# 退出当前用户
+ctrl + d
+```
+
+
 
 ##### 查看进程
 
@@ -120,7 +174,7 @@ ps aux --sort=-%mem | head | awk 'NR==1 {printf "%-8s %-8s %-8s %-8s %s\n", $1, 
 
 ```linux
 ss -tulnp #查看所有端口
-ss -tulnp | grep :80 #查看80端口
+ss -tulnp | grep :80 #查看80端口    
 
 netstat -tulnp #使用方式和ss命令一致，新版linux不再支持
 ```
@@ -130,6 +184,7 @@ netstat -tulnp #使用方式和ss命令一致，新版linux不再支持
 - l: 显示监听状态的端口
 - n: 不解析服务名称（使用端口号）
 - p: 显示进程标识符和程序名称
+- 形象的记住这个参数： tulnp ：秃驴（tul）拿（n）苹果（p）
 
 ##### 杀死进程
 
@@ -164,9 +219,16 @@ lscpu
 
 #### 文件操作
 
-```
-创建文件
+```bash
+# 创建文件
 touch filename
+
+# 创建文件夹 -p：自动创建上级路径，已存在文件夹不报错
+mkdir -p auth 
+
+# 删除文件/文件夹
+rm xxx.txt
+rm -rf dir
 
 # 授权 -R：递归
 chmod -R 777 file
@@ -181,7 +243,7 @@ cp  filepath filepath
 make install
 
 # 解压 .zip
-unzip xxx.zip
+unzip xxx.zip -d target/xxx
 ```
 
 

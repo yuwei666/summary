@@ -17,4 +17,9 @@ public interface PaymentService {
     @GetMapping("/payment/{id}")
     public ResponseEntity<String> payment(@PathVariable("id") Long id);
 
+    /*
+    * Feign 默认会将方法参数作为请求体（@RequestBody）处理，如果方法有多个参数，Feign 会报错
+    * 多个参数时使用 @RequestParam 注解明确指定：
+    * */
+    public ResponseEntity<String> payment(Object id);
 }

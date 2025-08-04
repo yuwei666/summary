@@ -16,12 +16,6 @@ docker version
 
 -- 提交
 docker commit
-
--- 保存，将镜像保存为tar文件
-docker save
-
--- 加载，将tar文件加载为镜像
-docker load
 ```
 
 
@@ -93,6 +87,15 @@ docker pull <镜像名称>
 # 删除镜像
 docker rmi <镜像名称或ID>
 
+# 导出镜像
+docker save -o <输出文件名>.tar <镜像名>:<标签>
+docker save <镜像名>:<标签> > <输出文件名>.tar
+# 导出多个镜像
+docker save -o multiple_images.tar image1:tag1 image2:tag2
+
+# 导入镜像
+docker load -i <文件名>.tar
+docker load < <文件名>.tar
 ```
 
 
@@ -215,6 +218,27 @@ docker run -d --name myNginx2 -p 82:80 --network mynet nginx
 ```
 curl http://myNginx2:80
 ```
+
+##### host
+
+Host 网络模式 是一种特殊的网络模式，允许容器直接使用宿主机的网络栈，而不是 Docker 默认创建的虚拟网络栈。
+容器的网络接口、IP 地址、端口等都与宿主机完全一致。
+
+1. 性能更高：由于容器直接使用宿主机的网络栈，省去了 Docker 虚拟网络的开销，网络性能更高。
+
+2. 端口直接映射：容器内的服务可以直接使用宿主机的端口，无需通过 -p 参数进行端口映射。
+
+3. 网络隔离性差：容器与宿主机共享网络栈，因此容器的网络配置与宿主机完全一致，无法实现网络隔离。
+
+4. 不支持多网络：在 Host 网络模式下，容器不能连接到其他 Docker 网络（如 bridge、overlay 等）。
+
+```bash
+docker run -d --name mycontainer --network host myimage
+```
+#####  bridge
+
+Bridge 网络是 Docker 默认提供的一种网络类型，所有容器在默认 Bridge 网络中
+
 
 
 
@@ -426,6 +450,9 @@ docker compose start/stop name1 name2
 
 -- 扩容 服务1 × 3，如之前1个实例，现在启动3个实例
 docker compose scale name1=3
+
+-- 停止docker
+sudo systemctl stop docker
 ```
 
 
@@ -505,18 +532,23 @@ sudo systemctl stop docker
 
 https://hub.docker.com为官方镜像源，国内使用需要翻墙或替换成其他镜像源。
 
-```
+```bash
 vim /etc/docker/daemon.json
 {
         "hosts":[
                 "unix:///var/run/docker.sock",
                 "tcp://0.0.0.0:2375"
         ],
-        "registry-mirrors": ["https://hub.docker.com"]
+        "registry-mirrors": [
+            "https://docker.m.daocloud.io",
+            "https://dockerproxy.com",
+            "https://docker.mirrors.ustc.edu.cn",
+            "https://docker.nju.edu.cn"
+  		],
 }
 
 # 保存后重启docker
- sudo systemctl daemon-reload && sudo systemctl restart docker 
+sudo systemctl daemon-reload && sudo systemctl restart docker
 ```
 
 

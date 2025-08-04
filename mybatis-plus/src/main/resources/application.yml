@@ -60,3 +60,8 @@ mybatis-plus:
   # 涉及到开发和生产数据库约束不一致时，需要动态书写表名的约束，可以在Mapper.xml中使用${db_schema}. 代替写死
   configuration-properties:
     db_schema: test
+
+jasypt:
+  encryptor:
+    # password: ${JASYPT_ENCRYPTOR_PASSWORD} # 从环境变量读取，推荐做法
+    password: 1234567890

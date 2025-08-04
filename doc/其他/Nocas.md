@@ -180,7 +180,89 @@ spring:
 
 
 
+发布-订阅模型
 
+```java
+package com.rld.operation.support;
+
+import com.alibaba.cloud.nacos.NacosServiceManager;
+import com.alibaba.cloud.nacos.discovery.NacosServiceDiscovery;
+import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.nacos.api.naming.listener.Event;
+import com.alibaba.nacos.client.naming.event.InstancesChangeEvent;
+import com.alibaba.nacos.common.notify.NotifyCenter;
+import com.alibaba.nacos.common.notify.listener.Subscriber;
+import com.alibaba.nacos.api.naming.listener.EventListener;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import com.alibaba.fastjson.JSON;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import java.util.List;
+
+/**
+ * @author yuwei
+ * @desc
+ * @date 2025/7/8
+ */
+@Component
+@Slf4j
+public class NacosEventSubscriber extends Subscriber<InstancesChangeEvent>
+{
+
+    @Resource
+    private NacosServiceManager nacosServiceManager;
+
+    @Resource
+    private NacosServiceDiscovery nacosServiceDiscovery;
+
+
+    @PostConstruct
+    public void registerToNotifyCenter(){
+        // 全局注册
+        NotifyCenter.registerSubscriber(this);
+        
+        // 订阅指定服务名称
+        NamingService namingService = nacosServiceManager.getNamingService();
+        try {
+            List<String> services = nacosServiceDiscovery.getServices();
+            for (String service : services) {
+                // 基于 Nacos 的 NamingService 服务订阅（服务粒度监听）。
+                namingService.subscribe(service, new EventListener() {
+                    @Override
+                    public void onEvent(Event event) {
+                        log.info("监听nacos的服务实例变化情况: {}", JSON.toJSONString(event));
+                    }
+                });
+            }
+
+        } catch (NacosException e) {
+            log.error("监听nacos的服务实例变化情况失败", e);
+        }
+    }
+
+    /**
+     * 监听全局所有服务的实例变更事件
+     * 基于 Nacos 的 NotifyCenter 发布-订阅模型
+     * 任何服务发生实例变化（上线/下线/更新）时自动触发。
+     * 通过 NotifyCenter.registerSubscriber(this) 全局注册。
+     * 强类型订阅（只接收 InstancesChangeEvent）。
+     */
+    @Override
+    public void onEvent(InstancesChangeEvent event) {
+        log.info("监听nacos的服务实例变化情况: {}", JSON.toJSONString(event));
+    }
+
+    @Override
+    public Class<? extends com.alibaba.nacos.common.notify.Event> subscribeType() {
+        return InstancesChangeEvent.class;
+    }
+
+}
+
+```
 
 
 

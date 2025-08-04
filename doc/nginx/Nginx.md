@@ -418,10 +418,13 @@ http {
     include		  gientech/*.conf;	# 包含进其他配置文件
     default_type  application/octet-stream;
 
-    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-    #                  '$status $body_bytes_sent "$http_referer" '
-    #                  '"$http_user_agent" "$http_x_forwarded_for"';
-
+    log_format  main  '$remote_addr - $remote_user [$time_local] '
+                         '"$request" $status $body_bytes_sent '
+                         'Actual File: "$request_filename"';
+        
+	# 打印结果：192.168.168.1 - - [30/Mar/2025:11:05:15 +0800] "GET /pacscloud HTTP/1.1" 304 0 Requested: # # "/pacscloud" -> Actual File: "/usr/share/nginx/html/index.html"
+        
+        
     #access_log  logs/access.log  main;
 
     sendfile        on;
@@ -552,3 +555,12 @@ http {
 前端项目是直接访问html/index.html，然后跳转到前端项目？？
 
 后端就是做负载
+
+
+
+服务器中启动文件位置 /sbin 
+
+文件位置 /etc/nginx
+
+
+

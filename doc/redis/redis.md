@@ -109,3 +109,10 @@ config set aof-use-rdb-preamble yes
 
 
 
+指令
+
+```
+KEYS * 	查看所有key
+get xxx 获取
+```
+

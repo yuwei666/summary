@@ -11,6 +11,41 @@ idea2024以上版本使用docker，tcp连接后，提示
 F:\java\docker\docker.exe (刚才解压的路径)
 ```
 
+在IDEA中执行docker compose时
+
+```bash
+docker compose -f /path/to/your/docker-compose.yml up
+```
+
+如果报错`unknown shorthand flag: 'f' in -f`，是因为最新版的docker已经将Docker-Compose作为插件，所以使用docker compose -f docker/docker-compose.yml up -ddocker不能识别，所以后面将Docker-Compose独立版进行删除，并安装Docker-Compose的插件版。
+
+```bash
+# 1.检查 Docker Compose 是否是插件版 如果安装的是 Docker Compose 插件而不是独立版，可以通过以下命令检查：
+docker compose version
+# 如果 docker-compose 命令是通过插件方式运行的，它会返回类似 Docker Compose version X.X.X 的信息。
+
+# 2.卸载独立版 Docker Compose
+sudo rm /usr/local/bin/docker-compose
+
+# 3.检查是否已成功卸载：
+docker-compose --version
+
+# 4.安装 Docker Compose 插件
+sudo apt-get install docker-compose-plugin
+
+# 5.随后通过以下命令检查 Docker Compose 版本
+docker compose version
+```
+
+
+
+
+
+
+
+
+
+
 
 
 ### IDEA 连接Docker TLS
@@ -45,3 +80,37 @@ F:\java\docker\docker.exe (刚才解压的路径)
 检查构建上下文：确保构建上下文中的文件没有不必要的变化。
 
 通过这些方法，可以减少不必要的层生成，从而减少 sha256: 文件的产生。
+
+
+
+### IDEA连接registry
+
+服务工具栏 -> + 添加服务 -> Docker 注册表 -> 注册表选择Docker V2 -> 填写地址 (http://192.168.168.100:5000)、用户名和密码。
+
+使用 HTTP 协议，需要在 Docker 客户端配置信任该仓库：让 Docker 允许访问 **非 HTTPS 的私有镜像仓库（Insecure Registry）**。
+
+编辑 `/etc/docker/daemon.json`：
+
+```bash
+{
+        "hosts":[
+            "unix:///var/run/docker.sock",
+            "tcp://0.0.0.0:2375"
+        ],
+        "registry-mirrors": [
+                "https://docker.m.daocloud.io",
+                "https://dockerproxy.com",
+                "https://docker.mirrors.ustc.edu.cn",
+                "https://docker.nju.edu.cn"
+        ],
+        "insecure-registries": ["http://192.168.168.100:5000"],
+        "hosts": ["tcp://0.0.0.0:2376", "unix:///var/run/docker.sock"]
+}
+```
+
+
+
+
+
+
+
