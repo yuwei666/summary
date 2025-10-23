@@ -55,8 +55,8 @@ tail -f -n 20 xxx.log > temp.log
 find /home/app/. -name "spring-security-*" 
 
 # 过滤掉所有没有权限的提示（不一定有效）
-find /home/app/. -name "spring-security-*" 2>/dev/null
-
+find /home/app/. -name "best_ucsf_model.pt" 2>/dev/null
+best_ucsf_model.pt
 # 在当前目录下递归查找所有名称为xx的文件
 find . -name "xx" 
 
@@ -65,6 +65,7 @@ find . -type d -name "xx"
 
 # 在根目录下查找文件夹html，并且排出错误选项（例如权限不足）
 find / -type d -name html 2>/dev/null
+find / -type d -name imagesrv-0.0.1-SNAPSHOT.jar 2>/dev/null
 ```
 
 ```
@@ -176,7 +177,11 @@ ps aux --sort=-%mem | head | awk 'NR==1 {printf "%-8s %-8s %-8s %-8s %s\n", $1, 
 ss -tulnp #查看所有端口
 ss -tulnp | grep :80 #查看80端口    
 
-netstat -tulnp #使用方式和ss命令一致，新版linux不再支持
+# 最常用
+sudo lsof -nP -iTCP:5432 -sTCP:LISTEN
+
+#使用方式和ss命令一致，新版linux不再支持
+netstat -tulnp
 ```
 
 - t: 显示TCP端口
