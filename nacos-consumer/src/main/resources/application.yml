@@ -9,3 +9,8 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848 #配置Nacos地址
+
+# 启用熔断器，LoadBalancer 抛出的异常也会进入 Feign fallback，否则Feign（负载均衡错误，例如：服务关闭、连不上不会进入 fallback） 不经过 Sentinel
+feign:
+  sentinel:
+    enabled: true

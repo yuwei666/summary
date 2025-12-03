@@ -12,4 +12,9 @@ public class PaymentFallbackService implements PaymentService {
     public ResponseEntity<String> payment(Long id) {
         return new ResponseEntity<String>("feign调用，异常降级方法", HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @Override
+    public ResponseEntity<String> payment(Object id) {
+        return null;
+    }
 }
