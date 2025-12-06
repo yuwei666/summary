@@ -12,7 +12,7 @@ pxc集群的存活数量需要大于总节点数量的一半才可以正常工�
 缺点：
 
 + 新加入节点开销大，需要把数据完全复制一次。SST协议开销大。
-+ 任何事务都要全局验证，MGR是大多数就行。性能取结予最差的节点。
++ 任何事务都要全局验证，MGR是大多数就行。性能取决于最差的节点。
 + 为了保证数据一致性，在并写的时候，锁冲突会比较严重。
 + 只支持innodb引擎。
 + 没有表锁，只能锁集群。
@@ -21,21 +21,17 @@ pxc集群的存活数量需要大于总节点数量的一半才可以正常工�
 
 ## pxc:8.0
 
-3台服务器 172.16.1.105/106/107，部署Msql的PXC集群模式。镜像使用percona-xtradb-cluster:8.0[参考](https://blog.csdn.net/dirful/article/details/132233312)
+3台服务器 172.16.1.105/106/107，部署方式为PXC集群模式，镜像使用percona-xtradb-cluster:8.0。
 
 ### 准备工作
+
+#### 拉取镜像
 
 以下内容在三个服务器都要执行
 
 ```bash
+# 切换root用户
 su -
-
-# PXC容器用户权限不够，挂载目录必须赋予权限777（所有人可读写）
-mkdir -m 777 -p /data/mysql-pxc/{conf,cert,logs,data,socket}
-# 如果已存在目录，需要更改权限
-chmod 777 /data/mysql-pxc/{conf,cert,logs,data,socket}
-# 改所属组（选做，好像不需要）
-chown -R 1001:1001 /data/mysql-pxc/{conf,cert,logs,data,socket}
 
 # 拉取官方镜像，更名
 docker pull docker.1ms.run/percona/percona-xtradb-cluster:8.0
@@ -44,6 +40,61 @@ docker rmi docker.1ms.run/percona/percona-xtradb-cluster:8.0
 ```
 
 
+
+#### 目录初始化
+
+```bash
+# PXC容器用户mysql权限很低，对写入的目录赋予读写权限
+mkdir -m 777 -p /data/mysql-pxc/{logs,data}
+# 配置和证书，如果给777权限，那么mysql认为不安全会拒绝读取配置，所以给755
+mkdir -m 755 -p /data/mysql-pxc/{conf,cert}
+# 在需要做备份的节点多增加socket目录（选做）
+mkdir -m 777 -p /data/mysql-pxc/socket
+
+# 使用容器创建证书 --rm：容器退出时自动删除该容器（只做一次，后续节点都使用此套证书）
+docker run --name pxc-cert --rm -v /data/mysql-pxc/cert:/cert pxc:8.0 mysql_ssl_rsa_setup -d /cert
+
+# 在conf目录下新增cert.cnf，内容见下方
+vim /data/mysql-pxc/conf/cert.cnf
+
+# 复制配置文件和证书到其他服务器
+scp /data/mysql-pxc/cert/* 192.168.100.129:/data/mysql-pxc/cert/
+scp /data/mysql-pxc/conf/* 192.168.100.129:/data/mysql-pxc/conf/
+
+# 修改权限和所属用户（每台服务器）
+chmod 644 /data/mysql-pxc/conf/cert.cnf
+chown root:root /data/mysql-pxc/conf/cert.cnf
+
+# 进入容器，验证证书，要保证每台机器的证书一样（可选）
+openssl x509 -noout -modulus -in /cert/server-cert.pem | md5sum
+openssl rsa  -noout -modulus -in /cert/server-key.pem  | md5sum
+```
+
+```cnf
+# cert.cnf
+[mysqld]
+skip-name-resolve
+ssl-ca = /cert/ca.pem
+ssl-cert = /cert/server-cert.pem
+ssl-key = /cert/server-key.pem
+
+pxc_encrypt_cluster_traffic = ON
+
+[client]
+ssl-ca = /cert/ca.pem
+ssl-cert = /cert/client-cert.pem
+ssl-key = /cert/client-key.pem
+
+[sst]
+encrypt = 4
+ssl-ca = /cert/ca.pem
+ssl-cert = /cert/server-cert.pem
+ssl-key = /cert/server-key.pem
+```
+
+
+
+#### 网络
 
 如果部署不同服务器上，需要创建overlay 网络，这里我以105为主。
 
@@ -59,34 +110,26 @@ sudo ufw status verbose
 docker swarm init
 # 创建一个名为 swarm_mysql 的 overlay 网络 --attachable：允许独立容器（docker run 启动的）直接加入该网络
 docker network create -d overlay --attachable swarm_mysql
-# 加入虚拟网络（其他两台服务器）
-docker swarm join --token XXXX 172.16.1.105:2377
-# 在主服务器查看此网络的节点列表
+# 查看节点加入token
+docker swarm join-token worker/manager
+# 上述命令得到token命令
+docker swarm join --token <SWARM-TOKEN> <MANAGER-IP>:2377
+
+# 管理员查看此网络的节点列表
 docker node ls
+# 离开swarm网络
+docker swarm leave
 ```
 
-除了上述准备工作外，推荐将服务器host名称更改，便于区分。如：mysql_node_105，mysql_node_106，mysql_node_107
-
-
-
-### 证书
-
-在任一台服务器执行，挂载目录下就会生成证书文件。
-
-```bash
-# --rm：容器退出时自动删除该容器
-docker run --name pxc-cert --rm -v /data/mysql-pxc/cert:/cert pxc:8.0 mysql_ssl_rsa_setup -d /cert
-```
-
-然后将`/data/mysql-pxc/cert` 同步到另外两台服务器的相同目录下。
+除了上述准备工作外，推荐将服务器host名称更改，便于区分。如：node105，node106，node107
 
 
 
 ### 集群部署
 
 ```bash
-# 107
-docker run  -it \
+# 107 第一个节点做集群初始化，不加-e CLUSTER_JOIN
+docker run  -d \-e CLUSTER_JOIN=mysql-pxc8.0-106 \
 --privileged \
 --restart always \
 --name=mysql-pxc8.0-107 \
@@ -104,12 +147,12 @@ pxc:8.0
 
 # 106 这里多挂载了一个socket目录，因为要使用这个容器做备份。
 # -v /data/pxc/pxc_socket:/tmp 映射集群mysql.sock到宿主机，方便xtrabackup socket连接
-docker run -d \
+sudo docker run -d \
 --privileged \
 --restart always \
 --name=mysql-pxc8.0-106 \
 --net=swarm_mysql \
--p 3306:3306 \
+-p 3307:3306 \
 -e TZ=Asia/Shanghai \
 -e CLUSTER_NAME=PXC \
 -e CLUSTER_JOIN=mysql-pxc8.0-107 \
@@ -125,30 +168,45 @@ pxc:8.0
 # 105
 docker run -d \
 --privileged \
---restart always \
 --name=mysql-pxc8.0-105 \
 --net=swarm_mysql \
--p 3306:3306 \
+-p 3307:3306 \
 -e TZ=Asia/Shanghai \
 -e CLUSTER_NAME=PXC \
--e CLUSTER_JOIN=mysql-pxc8.0-107 \
+-e CLUSTER_JOIN=mysql-pxc8.0-106 \
 -e MYSQL_ROOT_PASSWORD=P@ssword \
 -e XTRABACKUP_PASSWORD=P@ssword \
 -v /data/mysql-pxc/data:/var/lib/mysql \
 -v /data/mysql-pxc/conf:/etc/percona-xtradb-cluster.conf.d \
 -v /data/mysql-pxc/cert:/cert \
+-v /data/mysql-pxc/logs:/var/log/mysql \
 pxc:8.0
+
 ```
 
-启动成功后，进入任一节点，查看集群节点数量
+#### 验证
+
+启动成功后，进入任一节点，查看集群节点数量，应为总数
 
 ```mysql
-SHOW STATUS LIKE 'wsrep_cluster_size';
+SHOW VARIABLES LIKE 'pxc_encrypt_cluster_traffic';		# on代表通过Galera复制和集群的流量都会通过TLS/SSL进行加密；OFF明文传输
+SHOW STATUS LIKE 'wsrep_ready';							# 节点是否可用  ON：可用
+SHOW STATUS LIKE 'wsrep_cluster_size';  				# 集群节点数量
+SHOW VARIABLES LIKE 'wsrep_provider_options';			# 看目前使用证书的路径
+# 期望结果
+wsrep_provider_options 
+        gmcast.listen_addr = ssl://0.0.0.0:4567
+        socket.ssl        = YES
+        socket.ssl_ca     = /cert/ca.pem
+        socket.ssl_cert   = /cert/server-cert.pem
+        socket.ssl_key    = /cert/server-key.pem
 ```
 
 
 
 ### 备份
+
+#### 准备工作
 
 使用106做备份，在106下载镜像`percona-xtrabackup:8.0`
 
@@ -646,6 +704,18 @@ docker exec -u 0 -it haproxy-backup bash
 
 
 ## 问题整理
+
+#### 证书认证失败
+
+挂载目录权限问题，`cert.cnf` 权限若是777，mysql会因为所有人可以修改此文件而自动忽略掉这个配置文件，导致不会使用到/cert目录下的证书，而去使用自带的证书。
+
+
+
+#### tlsv1 alert decrypt error
+
+ TLS 握手时解密失败，然后回了一个 alert。一个节点日志中打印这个，并不代表自己节点出问题了，也有可能是想加入此节点的节点证书有问题。验证方法为查看两边证书的md5值是否一致。
+
+
 
 #### 节点启动失败
 
