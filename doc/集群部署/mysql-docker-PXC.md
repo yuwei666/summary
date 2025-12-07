@@ -70,8 +70,9 @@ openssl x509 -noout -modulus -in /cert/server-cert.pem | md5sum
 openssl rsa  -noout -modulus -in /cert/server-key.pem  | md5sum
 ```
 
+##### cert.cnf
+
 ```cnf
-# cert.cnf
 [mysqld]
 skip-name-resolve
 ssl-ca = /cert/ca.pem
@@ -90,6 +91,39 @@ encrypt = 4
 ssl-ca = /cert/ca.pem
 ssl-cert = /cert/server-cert.pem
 ssl-key = /cert/server-key.pem
+```
+
+#####  最终目录结构
+
+```bash
+root@node105:/data/mysql-pxc# ll
+total 24
+drwxr-xr-x  6 root root 4096 Dec  7 13:40 ./
+drwxr-xr-x  5 root root 4096 Dec  5 17:36 ../
+drwxr-xr-x  2 wzy  wzy  4096 Dec  5 17:58 cert/		# 必须具备高权限，推荐755/777，chmod 755 /data/mysql-pxc/cert
+drwxr-xr-x  2 root root 4096 Dec  7 13:36 conf/		# 必须具备高权限，推荐755/777，chmod 755 /data/mysql-pxc/conf
+drwxrwxrwx 10 root root 4096 Dec  7 15:54 data/		# 推荐777，chmod 777 /data/mysql-pxc/data
+drwxrwxrwx  2 root root 4096 Dec  5 18:00 logs/		# 推荐777，chmod 777 /data/mysql-pxc/logs
+
+root@node105:/data/mysql-pxc/conf# ll				# 配置文件权限不能高，高了会被忽略掉
+total 12
+drwxr-xr-x 2 root root 4096 Dec  7 13:36 ./
+drwxr-xr-x 6 root root 4096 Dec  7 13:40 ../
+-rw-r--r-- 1 root root  348 Dec  7 13:36 cert.cnf
+
+root@node105:/data/mysql-pxc/cert# ll				# 证书文件权限不能高，高了会被忽略掉
+total 40
+drwxr-xr-x 2 wzy   wzy   4096 Dec  5 17:58 ./
+drwxr-xr-x 6 root  root  4096 Dec  7 13:40 ../
+-rw-r--r-- 1 yuwei yuwei 1704 Dec  5 17:58 ca-key.pem
+-rw-r--r-- 1 yuwei yuwei 1155 Dec  5 17:58 ca.pem
+-rw-r--r-- 1 yuwei yuwei 1200 Dec  5 17:58 client-cert.pem
+-rw-r--r-- 1 yuwei yuwei 1704 Dec  5 17:58 client-key.pem
+-rw-r--r-- 1 yuwei yuwei 1700 Dec  5 17:58 private_key.pem
+-rw-r--r-- 1 yuwei yuwei  451 Dec  5 17:58 public_key.pem
+-rw-r--r-- 1 yuwei yuwei 1200 Dec  5 17:58 server-cert.pem
+-rw-r--r-- 1 yuwei yuwei 1704 Dec  5 17:58 server-key.pem
+root@node105:/data/mysql-pxc/cert#
 ```
 
 
@@ -115,10 +149,11 @@ docker swarm join-token worker/manager
 # 上述命令得到token命令
 docker swarm join --token <SWARM-TOKEN> <MANAGER-IP>:2377
 
-# 管理员查看此网络的节点列表
+# 管理员管理此网络的节点列表
 docker node ls
-# 离开swarm网络
-docker swarm leave
+docker node rm node105
+# 离开swarm网络，--force可选
+docker swarm leave --force
 ```
 
 除了上述准备工作外，推荐将服务器host名称更改，便于区分。如：node105，node106，node107
@@ -152,7 +187,7 @@ sudo docker run -d \
 --restart always \
 --name=mysql-pxc8.0-106 \
 --net=swarm_mysql \
--p 3307:3306 \
+-p 3306:3306 \
 -e TZ=Asia/Shanghai \
 -e CLUSTER_NAME=PXC \
 -e CLUSTER_JOIN=mysql-pxc8.0-107 \
@@ -170,10 +205,10 @@ docker run -d \
 --privileged \
 --name=mysql-pxc8.0-105 \
 --net=swarm_mysql \
--p 3307:3306 \
+-p 3306:3306 \
 -e TZ=Asia/Shanghai \
 -e CLUSTER_NAME=PXC \
--e CLUSTER_JOIN=mysql-pxc8.0-106 \
+-e CLUSTER_JOIN=mysql-pxc8.0-107 \
 -e MYSQL_ROOT_PASSWORD=P@ssword \
 -e XTRABACKUP_PASSWORD=P@ssword \
 -v /data/mysql-pxc/data:/var/lib/mysql \
@@ -189,6 +224,10 @@ pxc:8.0
 启动成功后，进入任一节点，查看集群节点数量，应为总数
 
 ```mysql
+docker exec -it mysql-pxc8.0-105 bash
+mysql -uroot -pP@ssword
+
+
 SHOW VARIABLES LIKE 'pxc_encrypt_cluster_traffic';		# on代表通过Galera复制和集群的流量都会通过TLS/SSL进行加密；OFF明文传输
 SHOW STATUS LIKE 'wsrep_ready';							# 节点是否可用  ON：可用
 SHOW STATUS LIKE 'wsrep_cluster_size';  				# 集群节点数量
@@ -818,7 +857,55 @@ redo_frames = 0
 
 
 
+#### 一直提示连接错误
 
+```bash
+# 查看日志
+docker logs -f mysql-pxc8.0-106
+
+# 发现一直报错
+2025-12-07T06:59:51.378587Z 0 [Note] [MY-000000] [Galera] Failed to establish connection: No route to host
+```
+
+**清空iptables规则**
+
+```bash
+# 关闭 ufw
+sudo ufw disable
+sudo ufw status
+
+# 备份当前 iptables 规则
+sudo iptables-save > /root/iptables-backup-$(date +%s).txt
+
+# 清空 filter / nat / mangle 三张表
+sudo iptables -F
+sudo iptables -t nat -F
+sudo iptables -t mangle -F
+
+# 删除所有自定义链（可选，但更干净）
+sudo iptables -X
+sudo iptables -t nat -X
+sudo iptables -t mangle -X
+```
+
+**重启容器**
+
+```bash
+# 重新获取swarm_mysql中106的ip
+root@node106:~# docker inspect -f '{{ .NetworkSettings.Networks.swarm_mysql.IPAddress }}' mysql-pxc8.0-106
+10.0.1.28
+
+# 在107测试，功能正常
+root@node107:~# docker run --rm --network=swarm_mysql busybox sh -c "
+  echo '=== ping 10.0.1.28 (node106) ===';
+  ping -c 3 10.0.1.28 || echo 'ping 10.0.1.28 FAILED';
+"
+=== ping 10.0.1.28 (node106) ===
+PING 10.0.1.28 (10.0.1.28): 56 data bytes
+64 bytes from 10.0.1.28: seq=0 ttl=64 time=0.412 ms
+64 bytes from 10.0.1.28: seq=1 ttl=64 time=0.403 ms
+64 bytes from 10.0.1.28: seq=2 ttl=64 time=0.286 ms
+```
 
 
 
