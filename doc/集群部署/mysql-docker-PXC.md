@@ -569,228 +569,7 @@ fi
 
 
 
-
-
-## pxc:5.7.21
-
-**集群部署** [参考](https://www.cnblogs.com/nhdlb/p/14032657.html)
-
-环境准备，分别在三台服务器进行以下操作  ，镜像使用percona-xtradb-cluster:5.7.21，此过程无需加密。
-
-```bash
-# 拉取官方镜像，更名
-docker pull docker.1ms.run/percona/percona-xtradb-cluster:5.7.21
-docker tag docker.1ms.run/percona/percona-xtradb-cluster:5.7.21 pxc:5.7.21
-docker rmi docker.1ms.run/percona/percona-xtradb-cluster:5.7.21
-
-# 开放所需端口(swarm使用)
-sudo ufw allow from 172.16.1.0/24 to any port 2377 proto tcp
-sudo ufw allow from 172.16.1.0/24 to any port 7946 proto tcp
-sudo ufw allow from 172.16.1.0/24 to any port 7946 proto udp
-sudo ufw allow from 172.16.1.0/24 to any port 4789 proto udp
-sudo ufw status verbose
-
-# 把当前主机初始化为 Swarm 集群的 manager，成功后会有一个带token的例子，供swarm join用
-docker swarm init
-# 创建一个名为 swarm_mysql 的 overlay 网络 --attachable：允许独立容器（docker run 启动的）直接加入该网络
-docker network create -d overlay --attachable swarm_mysql
-# 加入虚拟网络（其他两台服务器）
-docker swarm join --token XXXX 172.16.1.105:2377
-
-# 启动容器集群
-# CLUSTER_NAME，MYSQL_ROOT_PASSWORD，XTRABACKUP_PASSWORD 需要都使用同一个
-# -e CLUSTER_JOIN=node1 选填，如果不存在集群或全挂了则加上
-# 不能使用挂载目录，（只能使用卷，或权限777巨坑）
-docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword   -e TZ=Asia/Shanghai   -v mysql-pxc-105:/var/lib/mysql   --name=mysql-pxc-105 --net=swarm_mysql pxc:5.7.21
-docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword -e CLUSTER_JOIN=mysql-pxc-105  -e TZ=Asia/Shanghai   -v mysql-pxc-106:/var/lib/mysql   --name=mysql-pxc-106 --net=swarm_mysql pxc:5.7.21
-docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword -e CLUSTER_JOIN=mysql-pxc-105   -e TZ=Asia/Shanghai   -v mysql-pxc-107:/var/lib/mysql   --name=mysql-pxc-107 --net=swarm_mysql pxc:5.7.21
-
-# 查看卷
-docker volume inspect mysql-pcx-105
-```
-
-
-
-## 负载
-
-使用Haproxy做负载，将请求均匀地发送给集群中的每一个节点。
-
-HAProxy支持**协议级** MySQL 探活、连接与队列控制、细粒度限流/观察。为什么不用nginx，是因为nginx开源版本没这些功能。
-
-```bash
-# 拉取镜像haproxy
-docker pull docker.1ms.run/library/haproxy
-docker tag docker.1ms.run/library/haproxy:latest haproxy
-docker rmi docker.1ms.run/library/haproxy:latest
-
-# 创建Haproxy配置文件,文件在最后
-vim /opt/haproxy/haproxy.cfg
-
-# 在数据库集群中创建空密码、无权限用户haproxy，来供Haproxy对MySQL数据库进行心跳检测
-docker exec -it mysql-pxc-105 bash
-	mysql -uroot -p
-        P@ssword
-        use mysql;
-        create user 'haproxy'@'%' identified by '';
-        exit
-	exit
-
-# 105上创建haproxy容器
-docker run -it -d -p 4001:8888 -p 4002:3306 -v /opt/haproxy:/usr/local/etc/haproxy --name haproxy --net=swarm_mysql --privileged haproxy
-	# 访问方式：
-    http://172.16.1.105:4001/dbs	用户名admin，密码abc123456
-```
-
-附1：/opt/haproxy/haproxy.cfg
-
-```properties
-global
-    #日志文件，使用rsyslog服务中local5日志设备（/var/log/local5），等级info
-    log 127.0.0.1 local5 info
-    #守护进程运行
-    daemon
-
-defaults
-    log    global
-    mode    http
-    #日志格式
-    option    httplog
-    #日志中不记录负载均衡的心跳检测记录
-    option    dontlognull
-    #连接超时（毫秒）
-    timeout connect 5000
-    #客户端超时（毫秒）
-    timeout client  50000
-    #服务器超时（毫秒）
-    timeout server  50000
-
-#监控界面    
-listen  admin_stats
-    #监控界面的访问的IP和端口
-    bind  0.0.0.0:8888
-    #访问协议
-    mode        http
-    #URI相对地址
-    stats uri   /dbs
-    #统计报告格式
-    stats realm     Global\ statistics
-    #登陆帐户信息
-    stats auth  admin:abc123456
-#数据库负载均衡
-listen  proxy-mysql
-    #访问的IP和端口
-    bind  0.0.0.0:3306  
-    #网络协议
-    mode  tcp
-    #负载均衡算法（轮询算法）
-    #轮询算法：roundrobin
-    #权重算法：static-rr
-    #最少连接算法：leastconn
-    #请求源IP算法：source 
-    balance  roundrobin
-    #日志格式
-    option  tcplog
-    #在MySQL中创建一个没有权限的haproxy用户，密码为空。Haproxy使用这个账户对MySQL数据库心跳检测
-    option  mysql-check user haproxy
-    server  MySQL_1 172.18.0.2:3306 check weight 1 maxconn 2000  
-    server  MySQL_2 172.18.0.3:3306 check weight 1 maxconn 2000  
-    server  MySQL_3 172.18.0.4:3306 check weight 1 maxconn 2000 
-    #使用keepalive检测死链
-    option  tcpka
-```
-
-附2：/etc/keepalived/keepalived.conf
-
-```
-vrrp_instance  VI_1 {
-    state  MASTER
-    interface  eth0
-    virtual_router_id  51
-    priority  100	# 备用服务器可以修改小一点
-    advert_int  1
-    authentication {
-        auth_type  PASS
-        auth_pass  123456
-    }
-    virtual_ipaddress {
-        172.18.0.201
-    }
-}
-```
-
-高可用(未完成)
-
-```bash
-# ------ 以下部分为haproxy高可用，须有两个节点以上，我没有做----------
-# 以root身份进入容器
-docker exec -u 0 -it haproxy bash
-	apt-get update
-	# 安装keepalived
-	apt-get install -y keepalived
-	apt-get install -y vim
-	vim /etc/keepalived/keepalived.conf # 内容在附录2
-	
-# （以下切换到106，不试了，）106上创建haproxy容器，
-docker run -it -d -p 4001:8888 -p 4002:3306 -v /opt/haproxy:/usr/local/etc/haproxy --name haproxy-backup --net=swarm_mysql --privileged haproxy
-docker exec -u 0 -it haproxy-backup bash
-	apt-get update
-	# 安装keepalived
-	apt-get install -y keepalived
-	apt-get install -y vim
-	vim /etc/keepalived/keepalived.conf
-```
-
-
-
-## 问题整理
-
-#### 证书认证失败
-
-挂载目录权限问题，`cert.cnf` 权限若是777，mysql会因为所有人可以修改此文件而自动忽略掉这个配置文件，导致不会使用到/cert目录下的证书，而去使用自带的证书。
-
-
-
-#### tlsv1 alert decrypt error
-
- TLS 握手时解密失败，然后回了一个 alert。一个节点日志中打印这个，并不代表自己节点出问题了，也有可能是想加入此节点的节点证书有问题。验证方法为查看两边证书的md5值是否一致。
-
-
-
-#### 节点启动失败
-
-**问题描述：**上次容器启动的节点，直接被`docker rm -f mysql-8.0-107` 删除，再次创建容器时，因为之前挂载的文件还在，读取配置文件导致报错如下。该错误表示当前节点并不是最后离开集群的节点，因此它可能不包含所有最新的更新。
-
-```txt
-# -it 启动容器进入交互模式，直接在控制台上查看日志输出。
-docker run -it ...
-
-[ERROR] [MY-000000] [Galera] It may not be safe to bootstrap the cluster from this node. It was not the last one to leave the cluster and may not contain all the updates. To force cluster bootstrap with this node, edit the grastate.dat file manually and set safe_to_bootstrap to 1 .
-```
-
-**解决方案：**  查看/data/mysql-pxc/data/grastate.dat，找到 `safe_to_bootstrap` 并将其值改为 `1`。然后保存文件并重新启动容器。
-
-```
-vi /data/mysql-pxc/data/grastate.dat
-    # GALERA saved state
-    version: 2.1
-    uuid:    2b77159a-b637-11f0-99e8-262469fd2726
-    seqno:   28
-    safe_to_bootstrap: 1
-```
-
-**验证**：wsrep_ready为on时，该集群可用。
-
-```tex
-mysql> SHOW STATUS LIKE 'wsrep_ready%';
-+---------------+-------+
-| Variable_name | Value |
-+---------------+-------+
-| wsrep_ready   | ON    |
-+---------------+-------+
-1 row in set (0.00 sec)
-```
-
-
+### 问题整理
 
 #### 还原错误
 
@@ -843,6 +622,50 @@ redo_frames = 0
 
 
 
+### 问题整理
+
+#### 证书认证失败
+
+挂载目录权限问题，`cert.cnf` 权限若是777，mysql会因为所有人可以修改此文件而自动忽略掉这个配置文件，导致不会使用到/cert目录下的证书，而去使用自带的证书。
+
+#### tlsv1 alert decrypt error
+
+ TLS 握手时解密失败，然后回了一个 alert。一个节点日志中打印这个，并不代表自己节点出问题了，也有可能是想加入此节点的节点证书有问题。验证方法为查看两边证书的md5值是否一致。
+
+#### 节点启动失败
+
+**问题描述：**上次容器启动的节点，直接被`docker rm -f mysql-8.0-107` 删除，再次创建容器时，因为之前挂载的文件还在，读取配置文件导致报错如下。该错误表示当前节点并不是最后离开集群的节点，因此它可能不包含所有最新的更新。
+
+```txt
+# -it 启动容器进入交互模式，直接在控制台上查看日志输出。
+docker run -it ...
+
+[ERROR] [MY-000000] [Galera] It may not be safe to bootstrap the cluster from this node. It was not the last one to leave the cluster and may not contain all the updates. To force cluster bootstrap with this node, edit the grastate.dat file manually and set safe_to_bootstrap to 1 .
+```
+
+**解决方案：**  查看/data/mysql-pxc/data/grastate.dat，找到 `safe_to_bootstrap` 并将其值改为 `1`。然后保存文件并重新启动容器。
+
+```
+vi /data/mysql-pxc/data/grastate.dat
+    # GALERA saved state
+    version: 2.1
+    uuid:    2b77159a-b637-11f0-99e8-262469fd2726
+    seqno:   28
+    safe_to_bootstrap: 1
+```
+
+**验证**：wsrep_ready为on时，该集群可用。
+
+```tex
+mysql> SHOW STATUS LIKE 'wsrep_ready%';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| wsrep_ready   | ON    |
++---------------+-------+
+1 row in set (0.00 sec)
+```
+
 #### 加入集群错误
 
 在 Galera 集群中，`safe_to_bootstrap` 用于指示该节点是否可以安全地作为集群的启动节点，特别是当集群中的其他节点出现故障或无法访问时。如果一个节点作为集群的引导节点启动，它将重新初始化集群并成为集群的唯一节点，其他节点将无法加入集群，直到它们重新连接并与该节点同步。
@@ -852,10 +675,6 @@ redo_frames = 0
 **`safe_to_bootstrap: 0`**：表示该节点不能作为引导节点。这个值通常设置为 `0`，当集群中有其他节点存活并正常运行时，意味着当前节点不应引导集群。通常在集群还存在其他节点时使用此设置。
 
 所有应该去查找为1的节点，启动，其他节点再加入。只有当集群的其他节点无法启动或不存在时，`safe_to_bootstrap` 才可以被手动设置为 `1` 来引导集群。
-
-
-
-
 
 #### 一直提示连接错误
 
@@ -909,7 +728,206 @@ PING 10.0.1.28 (10.0.1.28): 56 data bytes
 
 
 
+## pxc:5.7.21
 
+**集群部署** [参考](https://www.cnblogs.com/nhdlb/p/14032657.html)
+
+环境准备，分别在三台服务器进行以下操作  ，镜像使用percona-xtradb-cluster:5.7.21，此过程无需加密。
+
+```bash
+# 拉取官方镜像，更名
+docker pull docker.1ms.run/percona/percona-xtradb-cluster:5.7.21
+docker tag docker.1ms.run/percona/percona-xtradb-cluster:5.7.21 pxc:5.7.21
+docker rmi docker.1ms.run/percona/percona-xtradb-cluster:5.7.21
+
+# 开放所需端口(swarm使用)
+sudo ufw allow from 172.16.1.0/24 to any port 2377 proto tcp
+sudo ufw allow from 172.16.1.0/24 to any port 7946 proto tcp
+sudo ufw allow from 172.16.1.0/24 to any port 7946 proto udp
+sudo ufw allow from 172.16.1.0/24 to any port 4789 proto udp
+sudo ufw status verbose
+
+# 把当前主机初始化为 Swarm 集群的 manager，成功后会有一个带token的例子，供swarm join用
+docker swarm init
+# 创建一个名为 swarm_mysql 的 overlay 网络 --attachable：允许独立容器（docker run 启动的）直接加入该网络
+docker network create -d overlay --attachable swarm_mysql
+# 加入虚拟网络（其他两台服务器）
+docker swarm join --token XXXX 172.16.1.105:2377
+
+# 启动容器集群
+# CLUSTER_NAME，MYSQL_ROOT_PASSWORD，XTRABACKUP_PASSWORD 需要都使用同一个
+# -e CLUSTER_JOIN=node1 选填，如果不存在集群或全挂了则加上
+# 不能使用挂载目录，（只能使用卷，或权限777巨坑）
+docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword   -e TZ=Asia/Shanghai   -v mysql-pxc-105:/var/lib/mysql   --name=mysql-pxc-105 --net=swarm_mysql pxc:5.7.21
+docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword -e CLUSTER_JOIN=mysql-pxc-105  -e TZ=Asia/Shanghai   -v mysql-pxc-106:/var/lib/mysql   --name=mysql-pxc-106 --net=swarm_mysql pxc:5.7.21
+docker run -d -p 3306:3306   -e MYSQL_ROOT_PASSWORD=P@ssword   -e CLUSTER_NAME=PXC   -e XTRABACKUP_PASSWORD=P@ssword -e CLUSTER_JOIN=mysql-pxc-105   -e TZ=Asia/Shanghai   -v mysql-pxc-107:/var/lib/mysql   --name=mysql-pxc-107 --net=swarm_mysql pxc:5.7.21
+
+# 查看卷
+docker volume inspect mysql-pcx-105
+```
+
+
+
+## Haproxy + keepalived
+
+使用Haproxy做**负载均衡**的，将请求均匀地发送给集群中的每一个节点。
+
+HAProxy支持**协议级** MySQL 探活、连接与队列控制、细粒度限流/观察。为什么不用nginx，是因为nginx开源版本没这些功能。
+
+Keepalived 是做**高可用**的，提供 VIP（虚拟 IP）浮动， 用 VRRP 协议选举 MASTER/BACKUP。
+
+Keepalived 保证对外提供的 IP 在服务器故障时自动切换，不中断业务连接。
+
+### 系统准备
+
+每台服务器都需要设置
+
+```bash
+# 切换到root用户
+su -
+# 加载 ip_vs 模块
+modprobe ip_vs
+# 允许绑定非本地 IP
+sysctl -w net.ipv4.ip_nonlocal_bind=1
+# 持久化
+cat >/etc/sysctl.d/99-haproxy-keepalived.conf <<EOF
+net.ipv4.ip_nonlocal_bind=1
+EOF
+sysctl -p /etc/sysctl.d/99-haproxy-keepalived.conf
+```
+
+### 容器准备
+
+```bash
+# 创建配置目录
+mkdir -p /data/haproxy_keepalived/{haproxy,keepalived}
+vim /data/haproxy_keepalived/haproxy/haproxy.cfg
+vim /data/haproxy_keepalived/keepalived/keepalived.conf
+vim /data/haproxy_keepalived/docker-compose.yml
+# 启动容器
+cd /data/haproxy_keepalived
+docker compose up -d
+```
+
+#### haproxy.cfg
+
+```tex
+# Web 监控界面 (可选，如果不用系统自带的，就加这一段)
+listen admin_stats
+    bind 0.0.0.0:8404
+    mode http
+    stats enable
+    stats uri /dbs
+    stats realm Global\ statistics
+    stats auth admin:abc123456
+
+# MySQL 负载均衡（PXC 三节点）
+listen proxy-mysql
+    bind 172.16.1.200:3307         # VIP，配合 keepalived 漂移
+    mode tcp
+    balance roundrobin
+    option tcplog
+    option tcpka
+    option mysql-check user haproxy
+
+    server pxc1 172.16.1.105:3306 check inter 2000 rise 3 fall 3 maxconn 2000
+    server pxc2 172.16.1.106:3306 check inter 2000 rise 3 fall 3 maxconn 2000
+    server pxc3 172.16.1.107:3306 check inter 2000 rise 3 fall 3 maxconn 2000
+```
+
+#### keepalived.conf
+
+> 这里的网卡 `enp0s31f6` 需要替换为本机的网卡名称，查询命令 `ip a`，看172.16.1.105所在的网卡名
+
+```tex
+vrrp_instance VI_1 {
+    state MASTER		# 注意：其他的节点更改为 BACKUP，只有一个MASTER
+    interface eno1
+    virtual_router_id 51
+    priority 150		# 注意：这里要更改，BACKUP要比master小，如140，130，每一个都要不一样
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass 123456
+    }
+
+    virtual_ipaddress {
+        172.16.1.200/24 dev eno1
+    }
+}
+```
+
+#### docker-compose.yml
+
+```yaml
+version: "3.8"
+
+services:
+  haproxy-keepalived:
+    image: instantlinux/haproxy-keepalived:latest
+    container_name: haproxy-keepalived
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+    restart: always
+    volumes:
+      # HAProxy 配置目录
+      - /data/haproxy_keepalived/haproxy:/usr/local/etc/haproxy.d:ro
+      # 每个节点自己的 keepalived.conf
+      - /data/haproxy_keepalived/keepalived/keepalived.conf:/etc/keepalived/keepalived.conf:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - STATS_ENABLE=yes
+      - PORT_HAPROXY_STATS=8404
+      # http://172.16.1.105:8404/stats haproxy:changeme
+      - STATS_URI=/stats
+```
+
+### 测试
+
+```sh
+# 在master上执行
+# 查看虚拟ip，MASTER占据VIP，BACKUP没有显示
+ip addr | grep 172.16.1.200
+    inet 172.16.1.200/24 scope global secondary enp0s31f6
+    
+# 查看3307端口，每一台都有结果才对
+ss -tulnp | grep 3307
+tcp     LISTEN   0        4096        172.16.1.200:3307           0.0.0.0:*      users:(("haproxy",pid=1243175,fd=5))
+
+# 测试连接mysql，直接使用VIP:3307即可
+mysql -h 172.16.1.200 -P 3307 -u youruser -p
+
+# 把MASTER容器停止，然后VIP 会漂移到 priority 更高的那个（106）
+# 106测试
+ip addr | grep 172.16.1.200
+    inet 172.16.1.200/24 scope global secondary eno1
+    
+# 再次测试连接mysql，依然可以连接，测试完成
+mysql -h 172.16.1.200 -P 3307 -u youruser -p
+```
+
+### 问题整理
+
+1. haproxy因为端口默认8080，和现有端口冲突了，改成8404端口就可以。
+
+>  再遇到问题看日志分析即可，日志写的很详细。
+
+```bash
+# 进入容器
+docker exec -it haproxy-keepalived sh
+
+# 进入这两个目录下，查看配置
+cd /usr/local/etc/haproxy
+cd /usr/local/etc/haproxy.d
+```
+
+
+
+2. 遇到了脑裂问题
+
+三个节点都写了MASTER，要有1个MASTER，剩下的都是BACKUP
 
 
 
