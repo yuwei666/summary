@@ -227,7 +227,6 @@ pxc:8.0
 docker exec -it mysql-pxc8.0-105 bash
 mysql -uroot -pP@ssword
 
-
 SHOW VARIABLES LIKE 'pxc_encrypt_cluster_traffic';		# on代表通过Galera复制和集群的流量都会通过TLS/SSL进行加密；OFF明文传输
 SHOW STATUS LIKE 'wsrep_ready';							# 节点是否可用  ON：可用
 SHOW STATUS LIKE 'wsrep_cluster_size';  				# 集群节点数量
@@ -861,8 +860,6 @@ vrrp_instance VI_1 {
 #### docker-compose.yml
 
 ```yaml
-version: "3.8"
-
 services:
   haproxy-keepalived:
     image: instantlinux/haproxy-keepalived:latest
