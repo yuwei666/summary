@@ -67,26 +67,89 @@ services:
 
 #### redis.conf
 
+##### Master
+
 ```
 port 7001
-# 必须绑定当前宿主机具体的局域网 IP，千万不要只写 127.0.0.1
+# 必须绑定当前宿主机具体的局域网 IP，不要写 127.0.0.1
 bind 172.16.1.105
 protected-mode no
 daemonize no
-appendonly yes
 dir /data
 
+# ---------------------------------------------------
+# 持久化配置
+# ---------------------------------------------------
+appendonly yes
+# AOF 刷盘策略：每秒刷盘（最高性能和数据安全性的平衡）
+appendfsync everysec
+# 启用 RDB 和 AOF 混合持久化 (Redis 4.0+ 推荐)
+aof-use-rdb-preamble yes
+
+# RDB 快照配置（可保留默认，作为AOF的补充）
+save 900 1
+save 300 100
+save 60 10000
+
+# ---------------------------------------------------
+# 内存配置 ( Slave 节点不需要 maxmemory )
+# ---------------------------------------------------
+# 必须小于容器或宿主机的实际内存，防止 OOM Killer
+maxmemory 4gb
+# 内存淘汰策略：推荐 LFU（最少使用频率）
+maxmemory-policy allkeys-lfu
+
+# ---------------------------------------------------
+# 集群与安全配置
+# ---------------------------------------------------
 # 集群配置
 cluster-enabled yes
 cluster-config-file nodes.conf
 cluster-node-timeout 5000
-# 避免虚拟IP问题，这里指定IP地址
 cluster-announce-ip 172.16.1.105
 
-# 密码（必填，自己设置）
+# 密码（必填）
 masterauth "redis"
 requirepass "redis"
 ```
+
+##### Slave 节点
+
+不需要设置 `maxmemory` 或 `maxmemory-policy`，因为它们的数据是 Master 复制过来的。
+
+```
+port 7002
+bind 172.16.1.105
+protected-mode no
+daemonize no
+dir /data
+
+# ---------------------------------------------------
+# 持久化配置
+# ---------------------------------------------------
+appendonly yes
+# 新增：确保 AOF 刷盘频率
+appendfsync everysec
+# 新增：启用混合持久化，加速恢复
+aof-use-rdb-preamble yes
+# RDB 快照（可选，但推荐保留）
+save 900 1
+save 300 100
+save 60 10000
+
+# ---------------------------------------------------
+# 集群与安全配置
+# ---------------------------------------------------
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+cluster-announce-ip 172.16.1.105
+
+masterauth "redis"
+requirepass "redis"
+```
+
+
 
 #### 创建集群
 
@@ -168,8 +231,6 @@ redis-cli -c -h 172.16.1.105 -p 7001 -a "redis"
 cluster nodes
 ```
 
-
-
 ```tex
 9a41246bf0259ca2292cc60d0fb948e065e63312 172.16.1.106:7001@17001 master - 0 1765447236869 3 connected 5461-10922
 897a6c97f2e2bb833a437ea75853bdcf8577fada 172.16.1.107:7001@17001 master - 0 1765447236000 5 connected 10923-16383
@@ -236,8 +297,6 @@ cluster-announce-ip 172.16.1.105
 
 
 
-
-
 #### 扩展
 
 ##### 如何保证高可用的
@@ -260,7 +319,7 @@ cluster-announce-ip 172.16.1.105
 
 + 16384 个槽位需要 16384 个比特（Bit）。
 
-- 16384 bits $\div$ 8 bits/Byte = **2048 字节 (2 KB)**。
+- 16384 bits ÷ 8 bits/Byte = **2048 字节 (2 KB)**。
 
 Redis 的设计者认为 **2KB** 是一个合理的大小，可以放在每个心跳包中。
 
